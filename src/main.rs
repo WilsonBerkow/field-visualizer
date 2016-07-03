@@ -115,19 +115,18 @@ impl App {
     }
 
     fn keypress(&mut self, key: Key) {
-        println!("Got a button press!");
         match key {
             Key::Up => {
-                self.rot_x += PI * 0.1;
+                self.rot_x += PI * 0.01;
             },
             Key::Down => {
-                self.rot_x -= PI * 0.1;
+                self.rot_x -= PI * 0.01;
             },
             Key::Right => {
-                self.rot_z += PI * 0.1;
+                self.rot_z += PI * 0.01;
             },
             Key::Left => {
-                self.rot_z -= PI * 0.1;
+                self.rot_z -= PI * 0.01;
             },
             _ => {},
         }
