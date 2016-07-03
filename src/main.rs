@@ -64,12 +64,11 @@ fn main() {
             Arrow3::new(-25.0, 25.0, 25.0,
                         0.0, -50.0, 0.0),
         ],
-        persp: PerspectiveMatrix3::new(1.0, 200.0/*2 * std::f64::consts::PI* /4.0*/, 0.0, 100.0),
+        persp: PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
         rot_x: 0.0,
         rot_y: 0.0,
         rot_z: 0.0,
     };
-    //Arrow3::new(0.0, 0.0, 1.0, 20.0, 50.0, 10.0)
 
     while let Some(e) = events.next(&mut window) {
         if let Some(r) = e.render_args() {
