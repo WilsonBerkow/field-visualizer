@@ -10,6 +10,7 @@ use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
 use na::{ Rotate, Point3, PerspectiveMatrix3 };
+use std::f64::consts::PI;
 
 const WIDTH: u32 = 600;
 const HEIGHT: u32 = 600;
@@ -64,7 +65,9 @@ fn main() {
                         0.0, -50.0, 0.0),
         ],
         persp: PerspectiveMatrix3::new(1.0, 200.0/*2 * std::f64::consts::PI* /4.0*/, 0.0, 100.0),
-        rot: 0.0,
+        rot_x: 0.0,
+        rot_y: 0.0,
+        rot_z: 0.0,
     };
     //Arrow3::new(0.0, 0.0, 1.0, 20.0, 50.0, 10.0)
 
@@ -75,6 +78,9 @@ fn main() {
         if let Some(u) = e.update_args() {
             app.update(&u);
         }
+        if let Some(Button::Keyboard(k)) = e.press_args() {
+            app.keypress(k);
+        }
     }
 }
 
@@ -82,25 +88,48 @@ struct App {
     gl: GlGraphics,
     arrows: Vec<Arrow3>,
     persp: PerspectiveMatrix3<f64>,
-    rot: f64,
+    rot_x: f64,
+    rot_y: f64,
+    rot_z: f64,
 }
 
 impl App {
     fn update(&mut self, args: &UpdateArgs) {
-        print!("Increasing rot by {} radians to {}", args.dt, self.rot);
-        self.rot += args.dt; // One radian per second
+        self.rot_y += args.dt; // One radian per second
     }
 
     fn render(&mut self, args: &RenderArgs) {
         graphics::clear(BG_CLR, &mut self.gl);
         let persp = &self.persp;
-        let rot = na::Rotation3::new(na::Vector3::new(0.0, self.rot, 0.0)); //std::f64::consts::PI * 0.25, std::f64::consts::PI * 0.25, 0.0));
+        let rot = na::Rotation3::new_with_euler_angles(
+                self.rot_x,
+                self.rot_y,
+                self.rot_z
+            );
         for arrow in &self.arrows {
             self.gl.draw(args.viewport(), |c, gl| {
                 use graphics::*;
                 arrow.draw(c, gl, persp, rot);
-                //Line::new([1.0, 0.0, 0.0, 1.0], 5.0).draw([-10.0, -5.0, -20.0, -10.0], &c.draw_state, c.transform, gl);
             });
+        }
+    }
+
+    fn keypress(&mut self, key: Key) {
+        println!("Got a button press!");
+        match key {
+            Key::Up => {
+                self.rot_x += PI * 0.1;
+            },
+            Key::Down => {
+                self.rot_x -= PI * 0.1;
+            },
+            Key::Right => {
+                self.rot_z += PI * 0.1;
+            },
+            Key::Left => {
+                self.rot_z -= PI * 0.1;
+            },
+            _ => {},
         }
     }
 }
@@ -165,7 +194,6 @@ impl Arrow {
         let path = [self.x, self.y, self.x + self.dx, self.y + self.dy];
         let line_style = Line::new([1.0, 1.0, 1.0, 1.0], 1.0);
         line_style.draw_arrow(path, 5.0, &c.draw_state, c.transform, gl);
-        println!("({}, {}) by ({}, {})", self.x, self.y, self.dx, self.dy);
     }
 
     fn update(&mut self, args: &UpdateArgs) {
