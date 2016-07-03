@@ -150,15 +150,19 @@ impl Arrow3 {
 
     fn point1(&self) -> Point3<f64> { Point3::new(self.x + self.dx, self.y + self.dy, self.z + self.dz) }
 
-    fn rot_project(&self, rot: na::Rotation3<f64>, persp: &PerspectiveMatrix3<f64>) -> Arrow {
+    fn project_to_viewport(&self, rot: na::Rotation3<f64>, persp: &PerspectiveMatrix3<f64>) -> Arrow {
         let pt0 = self.point0();
         let pt1 = self.point1();
+        // Apply cube's rotation:
         let mut pt0r = rot.rotate(&pt0);
         let mut pt1r = rot.rotate(&pt1);
+        // Transform relative to the camera position:
         pt0r.z += 51.0 + 40.0;
         pt1r.z += 51.0 + 40.0;
+        // Project onto "device" surface:
         let pt0_prime = persp.project_point(&pt0r);
         let pt1_prime = persp.project_point(&pt1r);
+        // Trasform to viewport surface:
         Arrow {
             x: pt0_prime.x * 150.0 + WIDTHF_2,
             y: pt0_prime.y * 150.0 + HEIGHTF_2,
@@ -169,7 +173,7 @@ impl Arrow3 {
 
     fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &PerspectiveMatrix3<f64>, rot: na::Rotation3<f64>) {
         use graphics::*;
-        let a2: Arrow = self.rot_project(rot, persp);
+        let a2: Arrow = self.project_to_viewport(rot, persp);
         a2.draw(c, gl);
     }
 }
