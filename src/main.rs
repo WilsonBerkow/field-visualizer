@@ -172,9 +172,6 @@ impl Arrow3 {
         let a2: Arrow = self.rot_project(rot, persp);
         a2.draw(c, gl);
     }
-
-    fn update(&mut self, args: &UpdateArgs) {
-    }
 }
 
 struct Arrow {
@@ -193,8 +190,4 @@ impl Arrow {
         let line_style = Line::new([1.0, 1.0, 1.0, 1.0], 1.0);
         line_style.draw_arrow(path, 5.0, &c.draw_state, c.transform, gl);
     }
-
-    fn update(&mut self, args: &UpdateArgs) {
-    }
-
 }
