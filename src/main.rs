@@ -37,31 +37,31 @@ fn main() {
         gl: GlGraphics::new(opengl),
         arrows: vec![
             // Front square:
-            Arrow3::new(0.0, 0.0, 0.0,
+            Arrow3::new(-25.0, -25.0, -25.0,
                         50.0, 0.0, 0.0),
-            Arrow3::new(50.0, 0.0, 0.0,
+            Arrow3::new(25.0, -25.0, -25.0,
                         0.0, 50.0, 0.0),
-            Arrow3::new(50.0, 50.0, 0.0,
+            Arrow3::new(25.0, 25.0, -25.0,
                         -50.0, 0.0, 0.0),
-            Arrow3::new(0.0, 50.0, 0.0,
+            Arrow3::new(-25.0, 25.0, -25.0,
                         0.0, -50.0, 0.0),
             // Connecting edges:
-            Arrow3::new(0.0, 0.0, 0.0,
+            Arrow3::new(-25.0, -25.0, -25.0,
                         0.0, 0.0, 50.0),
-            Arrow3::new(50.0, 0.0, 0.0,
+            Arrow3::new(25.0, -25.0, -25.0,
                         0.0, 0.0, 50.0),
-            Arrow3::new(0.0, 50.0, 0.0,
+            Arrow3::new(-25.0, 25.0, -25.0,
                         0.0, 0.0, 50.0),
-            Arrow3::new(50.0, 50.0, 0.0,
+            Arrow3::new(25.0, 25.0, -25.0,
                         0.0, 0.0, 50.0),
             // Back square:
-            Arrow3::new(0.0, 0.0, 50.0,
+            Arrow3::new(-25.0, -25.0, 25.0,
                         50.0, 0.0, 0.0),
-            Arrow3::new(50.0, 0.0, 50.0,
+            Arrow3::new(25.0, -25.0, 25.0,
                         0.0, 50.0, 0.0),
-            Arrow3::new(50.0, 50.0, 50.0,
+            Arrow3::new(25.0, 25.0, 25.0,
                         -50.0, 0.0, 0.0),
-            Arrow3::new(0.0, 50.0, 50.0,
+            Arrow3::new(-25.0, 25.0, 25.0,
                         0.0, -50.0, 0.0),
         ],
         persp: PerspectiveMatrix3::new(1.0, 200.0/*2 * std::f64::consts::PI* /4.0*/, 0.0, 100.0),
@@ -144,7 +144,7 @@ struct Arrow3 {
 
 impl Arrow3 {
     fn new(x: f64, y: f64, z: f64, dx: f64, dy: f64, dz: f64) -> Arrow3 {
-        Arrow3 { x: x - 25.0, y: y - 25.0, z: z - 25.0, dx: dx, dy: dy, dz: dz }
+        Arrow3 { x: x, y: y, z: z, dx: dx, dy: dy, dz: dz }
     }
 
     fn point0(&self) -> Point3<f64> { Point3::new(self.x, self.y, self.z) }
