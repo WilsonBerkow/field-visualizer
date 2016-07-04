@@ -134,43 +134,34 @@ impl App {
 }
 
 struct Arrow3 {
-    // Tail x, y, z:
-    tx: f64,
-    ty: f64,
-    tz: f64,
-    // Head x, y, z:
-    hx: f64,
-    hy: f64,
-    hz: f64,
+    tail: Point3,
+    head: Point3,
 }
 
 impl Arrow3 {
     fn new(tx: f64, ty: f64, tz: f64, hx: f64, hy: f64, hz: f64) -> Arrow3 {
-        Arrow3 { tx: tx, ty: ty, tz: tz, hx: hx, hy: hy, hz: hz }
+        Arrow3 {
+            tail: Point3::new(tx, ty, tz),
+            head: Point3::new(hx, hy, hz),
+        }
     }
 
-    fn point0(&self) -> Point3<f64> { Point3::new(self.tx, self.ty, self.tz) }
-
-    fn point1(&self) -> Point3<f64> { Point3::new(self.hx, self.hy, self.hz) }
-
     fn project_to_viewport(&self, rot: na::Rotation3<f64>, persp: &PerspectiveMatrix3<f64>) -> Arrow {
-        let pt0 = self.point0();
-        let pt1 = self.point1();
         // Apply cube's rotation:
-        let mut pt0r = rot.rotate(&pt0);
-        let mut pt1r = rot.rotate(&pt1);
+        let mut headr = rot.rotate(&self.head);
+        let mut tailr = rot.rotate(&self.tail);
         // Transform relative to the camera position:
-        pt0r.z += 51.0 + 40.0;
-        pt1r.z += 51.0 + 40.0;
+        headr.z += 51.0 + 40.0;
+        tailr.z += 51.0 + 40.0;
         // Project onto "device" surface:
-        let pt0_prime = persp.project_point(&pt0r);
-        let pt1_prime = persp.project_point(&pt1r);
+        let head_prime = persp.project_point(&headr);
+        let tail_prime = persp.project_point(&tailr);
         // Trasform to viewport surface:
         Arrow {
-            tx: pt0_prime.x * 150.0 + WIDTHF_2,
-            ty: pt0_prime.y * 150.0 + HEIGHTF_2,
-            hx: pt1_prime.x * 150.0 + WIDTHF_2,
-            hy: pt1_prime.y * 150.0 + HEIGHTF_2,
+            tx: head_prime.x * 150.0 + WIDTHF_2,
+            ty: head_prime.y * 150.0 + HEIGHTF_2,
+            hx: tail_prime.x * 150.0 + WIDTHF_2,
+            hy: tail_prime.y * 150.0 + HEIGHTF_2,
         }
     }
 
