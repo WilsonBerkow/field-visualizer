@@ -33,36 +33,37 @@ fn main() {
         .unwrap();
     let mut events = window.events();
 
+    let s: f64 = 25.0;
     let mut app: App = App {
         gl: GlGraphics::new(opengl),
         arrows: vec![
             // Front square:
-            Arrow3::new(-25.0, -25.0, -25.0,
-                        50.0, 0.0, 0.0),
-            Arrow3::new(25.0, -25.0, -25.0,
-                        0.0, 50.0, 0.0),
-            Arrow3::new(25.0, 25.0, -25.0,
-                        -50.0, 0.0, 0.0),
-            Arrow3::new(-25.0, 25.0, -25.0,
-                        0.0, -50.0, 0.0),
+            Arrow3::new(-s, -s, -s,
+                        s, -s, -s),
+            Arrow3::new(s, -s, -s,
+                        s, s, -s),
+            Arrow3::new(s, s, -s,
+                        -s, s, -s),
+            Arrow3::new(-s, s, -s,
+                        -s, -s, -s),
             // Connecting edges:
-            Arrow3::new(-25.0, -25.0, -25.0,
-                        0.0, 0.0, 50.0),
-            Arrow3::new(25.0, -25.0, -25.0,
-                        0.0, 0.0, 50.0),
-            Arrow3::new(-25.0, 25.0, -25.0,
-                        0.0, 0.0, 50.0),
-            Arrow3::new(25.0, 25.0, -25.0,
-                        0.0, 0.0, 50.0),
+            Arrow3::new(-s, -s, -s,
+                        -s, -s, s),
+            Arrow3::new(s, -s, -s,
+                        s, -s, s),
+            Arrow3::new(-s, s, -s,
+                        -s, s, s),
+            Arrow3::new(s, s, -s,
+                        s, s, s),
             // Back square:
-            Arrow3::new(-25.0, -25.0, 25.0,
-                        50.0, 0.0, 0.0),
-            Arrow3::new(25.0, -25.0, 25.0,
-                        0.0, 50.0, 0.0),
-            Arrow3::new(25.0, 25.0, 25.0,
-                        -50.0, 0.0, 0.0),
-            Arrow3::new(-25.0, 25.0, 25.0,
-                        0.0, -50.0, 0.0),
+            Arrow3::new(-s, -s, s,
+                        s, -s, s),
+            Arrow3::new(s, -s, s,
+                        s, s, s),
+            Arrow3::new(s, s, s,
+                        -s, s, s),
+            Arrow3::new(-s, s, s,
+                        -s, -s, s),
         ],
         persp: PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
         rot_x: 0.0,
@@ -133,22 +134,24 @@ impl App {
 }
 
 struct Arrow3 {
-    x: f64,
-    y: f64,
-    z: f64,
-    dx: f64,
-    dy: f64,
-    dz: f64,
+    // Tail x, y, z:
+    tx: f64,
+    ty: f64,
+    tz: f64,
+    // Head x, y, z:
+    hx: f64,
+    hy: f64,
+    hz: f64,
 }
 
 impl Arrow3 {
-    fn new(x: f64, y: f64, z: f64, dx: f64, dy: f64, dz: f64) -> Arrow3 {
-        Arrow3 { x: x, y: y, z: z, dx: dx, dy: dy, dz: dz }
+    fn new(tx: f64, ty: f64, tz: f64, hx: f64, hy: f64, hz: f64) -> Arrow3 {
+        Arrow3 { tx: tx, ty: ty, tz: tz, hx: hx, hy: hy, hz: hz }
     }
 
-    fn point0(&self) -> Point3<f64> { Point3::new(self.x, self.y, self.z) }
+    fn point0(&self) -> Point3<f64> { Point3::new(self.tx, self.ty, self.tz) }
 
-    fn point1(&self) -> Point3<f64> { Point3::new(self.x + self.dx, self.y + self.dy, self.z + self.dz) }
+    fn point1(&self) -> Point3<f64> { Point3::new(self.hx, self.hy, self.hz) }
 
     fn project_to_viewport(&self, rot: na::Rotation3<f64>, persp: &PerspectiveMatrix3<f64>) -> Arrow {
         let pt0 = self.point0();
@@ -164,10 +167,10 @@ impl Arrow3 {
         let pt1_prime = persp.project_point(&pt1r);
         // Trasform to viewport surface:
         Arrow {
-            x: pt0_prime.x * 150.0 + WIDTHF_2,
-            y: pt0_prime.y * 150.0 + HEIGHTF_2,
-            dx: (pt1_prime.x - pt0_prime.x) * 150.0,
-            dy: (pt1_prime.y - pt0_prime.y) * 150.0,
+            tx: pt0_prime.x * 150.0 + WIDTHF_2,
+            ty: pt0_prime.y * 150.0 + HEIGHTF_2,
+            hx: pt1_prime.x * 150.0 + WIDTHF_2,
+            hy: pt1_prime.y * 150.0 + HEIGHTF_2,
         }
     }
 
@@ -179,18 +182,18 @@ impl Arrow3 {
 }
 
 struct Arrow {
-    x: f64,
-    y: f64,
-    dx: f64,
-    dy: f64,
+    tx: f64,
+    ty: f64,
+    hx: f64,
+    hy: f64,
 }
 
 impl Arrow {
-    fn new(x: f64, y: f64, dx: f64, dy: f64) -> Arrow { Arrow { x: x, y: y, dx: dx, dy: dy } }
+    fn new(tx: f64, ty: f64, hx: f64, hy: f64) -> Arrow { Arrow { tx: tx, ty: ty, hx: hx, hy: hy } }
 
     fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
         use graphics::*;
-        let path = [self.x, self.y, self.x + self.dx, self.y + self.dy];
+        let path = [self.tx, self.ty, self.hx, self.hy];
         let line_style = Line::new([1.0, 1.0, 1.0, 1.0], 1.0);
         line_style.draw_arrow(path, 5.0, &c.draw_state, c.transform, gl);
     }
