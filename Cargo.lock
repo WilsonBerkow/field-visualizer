@@ -3,6 +3,7 @@ name = "vectors-starting"
 version = "0.1.0"
 dependencies = [
  "nalgebra 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num 0.1.32 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-graphics 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-opengl_graphics 0.30.0 (registry+https://github.com/rust-lang/crates.io-index)",

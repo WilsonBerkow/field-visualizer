@@ -2,6 +2,7 @@ extern crate piston;
 extern crate graphics;
 extern crate glutin_window;
 extern crate opengl_graphics;
+extern crate num;
 extern crate nalgebra as na;
 
 use piston::window::WindowSettings;
@@ -9,7 +10,6 @@ use piston::event_loop::*;
 use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
-use na::{ Rotate, Point3, PerspectiveMatrix3 };
 use std::f64::consts::PI;
 
 const WIDTH: u32 = 600;
@@ -65,7 +65,29 @@ fn main() {
             Arrow3::new(-s, s, s,
                         -s, -s, s),
         ],
-        persp: PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
+        camera: {
+            //use std::num::One;
+            //use std::num::Zero;
+            //use std::ops::Add;
+            //use std::ops::Mul;
+            //use std::ops::Div;
+            //use std::ops::Rem;
+            //use std::ops::AddAssign;
+            //use std::ops::SubAssign;
+            //use std::ops::MulAssign;
+            //use std::ops::DivAssign;
+            //use std::ops::RemAssign;
+            //use std::cmp::PartialEq;
+            //use na::Axpy;
+            //use na::Absolute;
+            //use na::BaseNum;
+            //use std::marker::Copy;
+            //use
+            //let uno = One::one() + Zero::zero();
+            use num::One;
+            One::one()
+        },
+        persp: na::PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
         rot_x: 0.0,
         rot_y: 0.0,
         rot_z: 0.0,
@@ -84,10 +106,19 @@ fn main() {
     }
 }
 
+fn translation3_mat<T: na::BaseNum + Copy>(v: na::Vector3<T>) -> na::Matrix4<T> {
+    let mut res: na::Matrix4<T> = num::One::one();
+    res.m14 = v.x;
+    res.m24 = v.y;
+    res.m34 = v.z;
+    res
+}
+
 struct App {
     gl: GlGraphics,
     arrows: Vec<Arrow3>,
-    persp: PerspectiveMatrix3<f64>,
+    persp: na::PerspectiveMatrix3<f64>,
+    camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
     rot_x: f64,
     rot_y: f64,
     rot_z: f64,
@@ -95,7 +126,7 @@ struct App {
 
 impl App {
     fn update(&mut self, args: &UpdateArgs) {
-        self.rot_y += args.dt; // One radian per second
+        //self.rot_y += args.dt; // One radian per second
     }
 
     fn render(&mut self, args: &RenderArgs) {
@@ -107,26 +138,67 @@ impl App {
                 self.rot_z
             );
         for arrow in &self.arrows {
+            let cam = self.camera;
             self.gl.draw(args.viewport(), |c, gl| {
-                use graphics::*;
-                arrow.draw(c, gl, persp, rot);
+                arrow.draw(c, gl, persp, rot, cam.clone());
             });
         }
     }
 
     fn keypress(&mut self, key: Key) {
+        use na::ToHomogeneous;
         match key {
             Key::Up => {
-                self.rot_x += PI * 0.01;
+                let rotmat = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
+                self.camera *= rotmat.submatrix().to_homogeneous();
             },
             Key::Down => {
-                self.rot_x -= PI * 0.01;
+                let rotmat = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
+                self.camera *= rotmat.submatrix().to_homogeneous();
             },
             Key::Right => {
-                self.rot_z += PI * 0.01;
+                let rotmat = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
+                self.camera *= rotmat.submatrix().to_homogeneous();
             },
             Key::Left => {
-                self.rot_z -= PI * 0.01;
+                let rotmat = na::Rotation3::new(na::Vector3::new(0.0, PI * 0.01, 0.0));
+                self.camera *= rotmat.submatrix().to_homogeneous();
+            },
+            Key::W => {
+                let transmat = translation3_mat(na::Vector3::new(0.0, 0.0, -1.0));
+                self.camera *= transmat;
+            },
+            Key::S => {
+                let transmat = translation3_mat(na::Vector3::new(0.0, 0.0, 1.0));
+                self.camera *= transmat;
+            },
+            Key::D => {
+                let transmat = translation3_mat(na::Vector3::new(-1.0, 0.0, 0.0));
+                self.camera *= transmat;
+            },
+            Key::A => {
+                let transmat = translation3_mat(na::Vector3::new(1.0, 0.0, 0.0));
+                self.camera *= transmat;
+            },
+            Key::Q => {
+                let transmat = translation3_mat(na::Vector3::new(0.0, -1.0, 0.0));
+                self.camera *= transmat;
+            },
+            Key::E => {
+                let transmat = translation3_mat(na::Vector3::new(0.0, 1.0, 0.0));
+                self.camera *= transmat;
+            },
+            Key::I => {
+                self.rot_x += PI * 0.01;
+            },
+            Key::K => {
+                self.rot_x -= PI * 0.01;
+            },
+            Key::L => {
+                self.rot_y += PI * 0.01;
+            },
+            Key::J => {
+                self.rot_y -= PI * 0.01;
             },
             _ => {},
         }
@@ -134,58 +206,66 @@ impl App {
 }
 
 struct Arrow3 {
-    tail: Point3,
-    head: Point3,
+    tail: na::Point3<f64>,
+    head: na::Point3<f64>,
 }
 
 impl Arrow3 {
     fn new(tx: f64, ty: f64, tz: f64, hx: f64, hy: f64, hz: f64) -> Arrow3 {
         Arrow3 {
-            tail: Point3::new(tx, ty, tz),
-            head: Point3::new(hx, hy, hz),
+            tail: na::Point3::new(tx, ty, tz),
+            head: na::Point3::new(hx, hy, hz),
         }
     }
 
-    fn project_to_viewport(&self, rot: na::Rotation3<f64>, persp: &PerspectiveMatrix3<f64>) -> Arrow {
+    fn project_to_viewport(&self, rot: na::Rotation3<f64>, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) -> Arrow {
+        use na::{ Rotate, ToHomogeneous, FromHomogeneous };
         // Apply cube's rotation:
         let mut headr = rot.rotate(&self.head);
         let mut tailr = rot.rotate(&self.tail);
         // Transform relative to the camera position:
         headr.z += 51.0 + 40.0;
         tailr.z += 51.0 + 40.0;
+        let headr: na::Point3<f64> = <na::Point3<f64> as FromHomogeneous<na::Point4<f64>>>::from(&(camera * headr.to_homogeneous()));
+        let tailr: na::Point3<f64> = <na::Point3<f64> as FromHomogeneous<na::Point4<f64>>>::from(&(camera * tailr.to_homogeneous()));
         // Project onto "device" surface:
         let head_prime = persp.project_point(&headr);
         let tail_prime = persp.project_point(&tailr);
         // Trasform to viewport surface:
-        Arrow {
-            tx: head_prime.x * 150.0 + WIDTHF_2,
-            ty: head_prime.y * 150.0 + HEIGHTF_2,
-            hx: tail_prime.x * 150.0 + WIDTHF_2,
-            hy: tail_prime.y * 150.0 + HEIGHTF_2,
-        }
+        Arrow::new(
+            na::Point2::new(
+                tail_prime.x * 150.0 + WIDTHF_2,
+                tail_prime.y * 150.0 + HEIGHTF_2,
+            ),
+            na::Point2::new(
+                head_prime.x * 150.0 + WIDTHF_2,
+                head_prime.y * 150.0 + HEIGHTF_2,
+            )
+        )
     }
 
-    fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &PerspectiveMatrix3<f64>, rot: na::Rotation3<f64>) {
-        use graphics::*;
-        let a2: Arrow = self.project_to_viewport(rot, persp);
+    fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &na::PerspectiveMatrix3<f64>, rot: na::Rotation3<f64>, camera: na::Matrix4<f64>) {
+        let a2: Arrow = self.project_to_viewport(rot, persp, camera);
         a2.draw(c, gl);
     }
 }
 
 struct Arrow {
-    tx: f64,
-    ty: f64,
-    hx: f64,
-    hy: f64,
+    tail: na::Point2<f64>,
+    head: na::Point2<f64>,
 }
 
 impl Arrow {
-    fn new(tx: f64, ty: f64, hx: f64, hy: f64) -> Arrow { Arrow { tx: tx, ty: ty, hx: hx, hy: hy } }
+    fn new(tail: na::Point2<f64>, head: na::Point2<f64>) -> Arrow {
+        Arrow {
+            tail: tail,
+            head: head,
+        }
+    }
 
     fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
-        use graphics::*;
-        let path = [self.tx, self.ty, self.hx, self.hy];
-        let line_style = Line::new([1.0, 1.0, 1.0, 1.0], 1.0);
+        let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
+        let line_style = graphics::Line::new([1.0, 1.0, 1.0, 1.0], 1.0);
         line_style.draw_arrow(path, 5.0, &c.draw_state, c.transform, gl);
     }
 }
