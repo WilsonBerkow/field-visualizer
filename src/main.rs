@@ -11,7 +11,6 @@ use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
 use std::f64::consts::PI;
-use std::ops::Mul;
 
 const WIDTH: u32 = 600;
 const HEIGHT: u32 = 600;
@@ -19,6 +18,9 @@ const WIDTHF: f64 = WIDTH as f64;
 const HEIGHTF: f64 = HEIGHT as f64;
 const WIDTHF_2: f64 = WIDTHF * 0.5;
 const HEIGHTF_2: f64 = HEIGHTF * 0.5;
+
+const GRID_S: f64 = 20.0;
+const GRID_S_2: f64 = GRID_S * 0.5;
 
 const BG_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
@@ -34,41 +36,23 @@ fn main() {
         .unwrap();
     let mut events = window.events();
 
-    let s: f64 = 25.0;
     let mut app: App = App {
         gl: GlGraphics::new(opengl),
-        arrows: vec![
-            // Front square:
-            Arrow3::new(-s, -s, -s,
-                        s, -s, -s),
-            Arrow3::new(s, -s, -s,
-                        s, s, -s),
-            Arrow3::new(s, s, -s,
-                        -s, s, -s),
-            Arrow3::new(-s, s, -s,
-                        -s, -s, -s),
-            // Connecting edges:
-            Arrow3::new(-s, -s, -s,
-                        -s, -s, s),
-            Arrow3::new(s, -s, -s,
-                        s, -s, s),
-            Arrow3::new(-s, s, -s,
-                        -s, s, s),
-            Arrow3::new(s, s, -s,
-                        s, s, s),
-            // Back square:
-            Arrow3::new(-s, -s, s,
-                        s, -s, s),
-            Arrow3::new(s, -s, s,
-                        s, s, s),
-            Arrow3::new(s, s, s,
-                        -s, s, s),
-            Arrow3::new(-s, s, s,
-                        -s, -s, s),
-        ],
+        arrows: vec![],
         camera: translation3_mat(na::Vector3::new(0.0, 0.0, 91.0)),
         persp: na::PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
+        chg: PointCharge::new(1.0, na::Point3::new(GRID_S_2, GRID_S_2, GRID_S_2)),
     };
+    for i in -1..3 {
+        for j in -1..3 {
+            for k in -1..3 {
+                app.arrows.push(app.chg.arrow_at(&na::Point3::new(
+                            i as f64 * GRID_S,
+                            j as f64 * GRID_S,
+                            k as f64 * GRID_S)));
+            }
+        }
+    }
 
     while let Some(e) = events.next(&mut window) {
         if let Some(r) = e.render_args() {
@@ -96,6 +80,7 @@ struct App {
     arrows: Vec<Arrow3>,
     persp: na::PerspectiveMatrix3<f64>,
     camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
+    chg: PointCharge,
 }
 
 impl App {
@@ -208,6 +193,40 @@ fn transform_in_homo(pt: na::Point3<f64>, mat: &na::Matrix4<f64>) -> na::Point3<
     <na::Point3<f64> as FromHomogeneous<na::Point4<f64>>>::from(&(ref_mat4_mul(mat, pt.to_homogeneous())))
 }
 
+trait VectorField3 {
+    fn force_at(&self, p: &na::Point3<f64>) -> na::Vector3<f64>;
+    fn arrow_at(&self, p: &na::Point3<f64>) -> Arrow3;
+}
+
+struct PointCharge {
+    charge: f64,
+    loc: na::Point3<f64>,
+}
+
+impl PointCharge {
+    fn new(charge: f64, loc: na::Point3<f64>) -> PointCharge {
+        PointCharge { charge: charge, loc: loc }
+    }
+}
+
+impl VectorField3 for PointCharge {
+    fn force_at(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
+        use na::Norm;
+        let unit_vec = (p.clone() - self.loc).normalize(); // ownership error likely
+        let magnitude = self.charge / na::distance_squared(&self.loc, p);
+        10000.0 * magnitude * unit_vec
+    }
+
+    fn arrow_at(&self, p: &na::Point3<f64>) -> Arrow3 {
+        use na::Translate;
+        let tail = p.clone();
+        let f = self.force_at(p);
+        let head = f.translate(&tail);
+        println!("Force: {}", f);
+        Arrow3 { tail: tail, head: head }
+    }
+}
+
 struct Arrow3 {
     tail: na::Point3<f64>,
     head: na::Point3<f64>,
@@ -227,7 +246,6 @@ impl Arrow3 {
     }
 
     fn project_to_viewport(&self, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) -> Arrow {
-        use na::{ ToHomogeneous, FromHomogeneous };
         // Transform relative to the camera position:
         let headr: na::Point3<f64> = transform_in_homo(self.head, &camera);
         let tailr: na::Point3<f64> = transform_in_homo(self.tail, &camera);
