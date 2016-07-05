@@ -11,6 +11,7 @@ use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
 use std::f64::consts::PI;
+use std::ops::Mul;
 
 const WIDTH: u32 = 600;
 const HEIGHT: u32 = 600;
@@ -65,32 +66,8 @@ fn main() {
             Arrow3::new(-s, s, s,
                         -s, -s, s),
         ],
-        camera: {
-            //use std::num::One;
-            //use std::num::Zero;
-            //use std::ops::Add;
-            //use std::ops::Mul;
-            //use std::ops::Div;
-            //use std::ops::Rem;
-            //use std::ops::AddAssign;
-            //use std::ops::SubAssign;
-            //use std::ops::MulAssign;
-            //use std::ops::DivAssign;
-            //use std::ops::RemAssign;
-            //use std::cmp::PartialEq;
-            //use na::Axpy;
-            //use na::Absolute;
-            //use na::BaseNum;
-            //use std::marker::Copy;
-            //use
-            //let uno = One::one() + Zero::zero();
-            use num::One;
-            One::one()
-        },
+        camera: translation3_mat(na::Vector3::new(0.0, 0.0, 91.0)),
         persp: na::PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
-        rot_x: 0.0,
-        rot_y: 0.0,
-        rot_z: 0.0,
     };
 
     while let Some(e) = events.next(&mut window) {
@@ -106,7 +83,7 @@ fn main() {
     }
 }
 
-fn translation3_mat<T: na::BaseNum + Copy>(v: na::Vector3<T>) -> na::Matrix4<T> {
+fn translation3_mat<T: na::BaseNum>(v: na::Vector3<T>) -> na::Matrix4<T> {
     let mut res: na::Matrix4<T> = num::One::one();
     res.m14 = v.x;
     res.m24 = v.y;
@@ -119,28 +96,19 @@ struct App {
     arrows: Vec<Arrow3>,
     persp: na::PerspectiveMatrix3<f64>,
     camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
-    rot_x: f64,
-    rot_y: f64,
-    rot_z: f64,
 }
 
 impl App {
     fn update(&mut self, args: &UpdateArgs) {
-        //self.rot_y += args.dt; // One radian per second
     }
 
     fn render(&mut self, args: &RenderArgs) {
         graphics::clear(BG_CLR, &mut self.gl);
         let persp = &self.persp;
-        let rot = na::Rotation3::new_with_euler_angles(
-                self.rot_x,
-                self.rot_y,
-                self.rot_z
-            );
         for arrow in &self.arrows {
             let cam = self.camera;
             self.gl.draw(args.viewport(), |c, gl| {
-                arrow.draw(c, gl, persp, rot, cam.clone());
+                arrow.draw(c, gl, persp, cam.clone());
             });
         }
     }
@@ -150,59 +118,94 @@ impl App {
         match key {
             Key::Up => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
-                self.camera *= rotmat.submatrix().to_homogeneous();
+                self.camera = rotmat.submatrix().to_homogeneous() * self.camera;
             },
             Key::Down => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
-                self.camera *= rotmat.submatrix().to_homogeneous();
+                self.camera = rotmat.submatrix().to_homogeneous() * self.camera;
             },
             Key::Right => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
-                self.camera *= rotmat.submatrix().to_homogeneous();
+                self.camera = rotmat.submatrix().to_homogeneous() * self.camera;
             },
             Key::Left => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(0.0, PI * 0.01, 0.0));
-                self.camera *= rotmat.submatrix().to_homogeneous();
+                self.camera = rotmat.submatrix().to_homogeneous() * self.camera;
             },
             Key::W => {
                 let transmat = translation3_mat(na::Vector3::new(0.0, 0.0, -1.0));
-                self.camera *= transmat;
+                self.camera = transmat * self.camera;
             },
             Key::S => {
                 let transmat = translation3_mat(na::Vector3::new(0.0, 0.0, 1.0));
-                self.camera *= transmat;
+                self.camera = transmat * self.camera;
             },
             Key::D => {
                 let transmat = translation3_mat(na::Vector3::new(-1.0, 0.0, 0.0));
-                self.camera *= transmat;
+                self.camera = transmat * self.camera;
             },
             Key::A => {
                 let transmat = translation3_mat(na::Vector3::new(1.0, 0.0, 0.0));
-                self.camera *= transmat;
+                self.camera = transmat * self.camera;
             },
             Key::Q => {
                 let transmat = translation3_mat(na::Vector3::new(0.0, -1.0, 0.0));
-                self.camera *= transmat;
+                self.camera = transmat * self.camera;
             },
             Key::E => {
                 let transmat = translation3_mat(na::Vector3::new(0.0, 1.0, 0.0));
-                self.camera *= transmat;
+                self.camera = transmat * self.camera;
             },
             Key::I => {
-                self.rot_x += PI * 0.01;
+                let rotmat = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
+                for arrow in self.arrows.iter_mut() {
+                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
+                }
             },
             Key::K => {
-                self.rot_x -= PI * 0.01;
+                let rotmat = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
+                for arrow in self.arrows.iter_mut() {
+                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
+                }
             },
             Key::L => {
-                self.rot_y += PI * 0.01;
+                let rotmat = na::Rotation3::new(na::Vector3::new(0.0, PI * 0.01, 0.0));
+                for arrow in self.arrows.iter_mut() {
+                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
+                }
             },
             Key::J => {
-                self.rot_y -= PI * 0.01;
+                let rotmat = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
+                for arrow in self.arrows.iter_mut() {
+                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
+                }
             },
             _ => {},
         }
     }
+}
+
+// The following should be in nalgebra, which implements
+// Mul<Point4<N>> for Matrix4<N> but not also for &'a Matrix<N>.
+// The definition mirrors nalgebra's definition of the method
+// `mul` in `impl... for Matrix4<N>`.
+#[inline]
+fn ref_mat4_mul(mat: &na::Matrix4<f64>, right: na::Point4<f64>) -> na::Point4<f64> {
+    let mut res: na::Point4<f64> = na::Point4::new(0.0, 0.0, 0.0, 0.0);
+    for i in 0..4 {
+        for j in 0..4 {
+            unsafe {
+                let val = res.at_fast(i) + mat.at_fast((i, j)) * right.at_fast(j);
+                res.set_fast(i, val);
+            }
+        }
+    }
+    res
+}
+
+fn transform_in_homo(pt: na::Point3<f64>, mat: &na::Matrix4<f64>) -> na::Point3<f64> {
+    use na::{ ToHomogeneous, FromHomogeneous };
+    <na::Point3<f64> as FromHomogeneous<na::Point4<f64>>>::from(&(ref_mat4_mul(mat, pt.to_homogeneous())))
 }
 
 struct Arrow3 {
@@ -218,16 +221,16 @@ impl Arrow3 {
         }
     }
 
-    fn project_to_viewport(&self, rot: na::Rotation3<f64>, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) -> Arrow {
-        use na::{ Rotate, ToHomogeneous, FromHomogeneous };
-        // Apply cube's rotation:
-        let mut headr = rot.rotate(&self.head);
-        let mut tailr = rot.rotate(&self.tail);
+    fn map_transform(&mut self, mat: &na::Matrix4<f64>) {
+        self.tail = transform_in_homo(self.tail, mat);
+        self.head = transform_in_homo(self.head, mat);
+    }
+
+    fn project_to_viewport(&self, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) -> Arrow {
+        use na::{ ToHomogeneous, FromHomogeneous };
         // Transform relative to the camera position:
-        headr.z += 51.0 + 40.0;
-        tailr.z += 51.0 + 40.0;
-        let headr: na::Point3<f64> = <na::Point3<f64> as FromHomogeneous<na::Point4<f64>>>::from(&(camera * headr.to_homogeneous()));
-        let tailr: na::Point3<f64> = <na::Point3<f64> as FromHomogeneous<na::Point4<f64>>>::from(&(camera * tailr.to_homogeneous()));
+        let headr: na::Point3<f64> = transform_in_homo(self.head, &camera);
+        let tailr: na::Point3<f64> = transform_in_homo(self.tail, &camera);
         // Project onto "device" surface:
         let head_prime = persp.project_point(&headr);
         let tail_prime = persp.project_point(&tailr);
@@ -244,8 +247,8 @@ impl Arrow3 {
         )
     }
 
-    fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &na::PerspectiveMatrix3<f64>, rot: na::Rotation3<f64>, camera: na::Matrix4<f64>) {
-        let a2: Arrow = self.project_to_viewport(rot, persp, camera);
+    fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) {
+        let a2: Arrow = self.project_to_viewport(persp, camera);
         a2.draw(c, gl);
     }
 }
