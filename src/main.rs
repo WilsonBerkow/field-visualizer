@@ -65,6 +65,7 @@ fn main() {
         gl: GlGraphics::new(opengl),
         arrows: vec![],
         grid_arrows: vec![],
+        arrow_transforms: num::One::one(),
         camera: translation3_mat(na::Vector3::new(0.0, -GRID_S_2, 200.0)),
         persp: na::PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
         charges: vec![
@@ -111,6 +112,7 @@ struct App {
     gl: GlGraphics,
     arrows: Vec<Arrow3>,
     grid_arrows: Vec<Arrow3>,
+    arrow_transforms: na::Matrix4<f64>, // the product of transforms which have gotten the initial arrows to their current position
     persp: na::PerspectiveMatrix3<f64>,
     camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
     charges: Vec<PointCharge>,
@@ -183,64 +185,58 @@ impl App {
                 self.camera = transmat * self.camera;
             },
             Key::I => {
-                let rotmat = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
-                for arrow in self.arrows.iter_mut() {
-                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
-                }
-                for arrow in self.grid_arrows.iter_mut() {
-                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
-                }
+                let rot = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
+                let rotmat = rot.submatrix().to_homogeneous();
+                self.arrow_transforms = rotmat * self.arrow_transforms;
+                self.map_transform(&rotmat);
             },
             Key::K => {
-                let rotmat = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
-                for arrow in self.arrows.iter_mut() {
-                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
-                }
-                for arrow in self.grid_arrows.iter_mut() {
-                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
-                }
+                let rot = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
+                let rotmat = rot.submatrix().to_homogeneous();
+                self.arrow_transforms = rotmat * self.arrow_transforms;
+                self.map_transform(&rotmat);
             },
             Key::L => {
-                let rotmat = na::Rotation3::new(na::Vector3::new(0.0, PI * 0.01, 0.0));
-                for arrow in self.arrows.iter_mut() {
-                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
-                }
-                for arrow in self.grid_arrows.iter_mut() {
-                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
-                }
+                let rot = na::Rotation3::new(na::Vector3::new(0.0, PI * 0.01, 0.0));
+                let rotmat = rot.submatrix().to_homogeneous();
+                self.arrow_transforms = rotmat * self.arrow_transforms;
+                self.map_transform(&rotmat);
             },
             Key::J => {
-                let rotmat = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
-                for arrow in self.arrows.iter_mut() {
-                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
-                }
-                for arrow in self.grid_arrows.iter_mut() {
-                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
-                }
+                let rot = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
+                let rotmat = rot.submatrix().to_homogeneous();
+                self.arrow_transforms = rotmat * self.arrow_transforms;
+                self.map_transform(&rotmat);
             },
             Key::T => {
                 self.charges[0].loc.y -= CHARGE_MVMT_STEP;
                 self.populate_field();
+                self.map_arrow_transforms();
             },
             Key::G => {
                 self.charges[0].loc.y += CHARGE_MVMT_STEP;
                 self.populate_field();
+                self.map_arrow_transforms();
             },
             Key::H => {
                 self.charges[0].loc.x += CHARGE_MVMT_STEP;
                 self.populate_field();
+                self.map_arrow_transforms();
             },
             Key::F => {
                 self.charges[0].loc.x -= CHARGE_MVMT_STEP;
                 self.populate_field();
+                self.map_arrow_transforms();
             },
             Key::R => {
                 self.charges[0].loc.z -= CHARGE_MVMT_STEP;
                 self.populate_field();
+                self.map_arrow_transforms();
             },
             Key::Y => {
                 self.charges[0].loc.z += CHARGE_MVMT_STEP;
                 self.populate_field();
+                self.map_arrow_transforms();
             },
             _ => {},
         }
@@ -312,6 +308,24 @@ impl App {
                         )
                     );
             }
+        }
+    }
+
+    fn map_transform(&mut self, t: &na::Matrix4<f64>) {
+        for arrow in self.arrows.iter_mut() {
+            arrow.map_transform(t);
+        }
+        for arrow in self.grid_arrows.iter_mut() {
+            arrow.map_transform(t);
+        }
+    }
+
+    fn map_arrow_transforms(&mut self) {
+        for arrow in self.arrows.iter_mut() {
+            arrow.map_transform(&self.arrow_transforms);
+        }
+        for arrow in self.grid_arrows.iter_mut() {
+            arrow.map_transform(&self.arrow_transforms);
         }
     }
 }
