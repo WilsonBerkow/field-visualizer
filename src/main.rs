@@ -28,7 +28,7 @@ const GRID_S: f64 = 30.0;
 const GRID_S_2: f64 = GRID_S * 0.5;
 const GRID_DIAG: f64 = GRID_S * 1.73205080757; // 1.7... is sqrt(3)
 
-const CHARGE_MVMT_STEP: f64 = 2.0;
+const CHARGE_MVMT_STEP: f64 = GRID_S;
 
 const BG_CLR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
