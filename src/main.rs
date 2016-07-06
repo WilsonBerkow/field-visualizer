@@ -28,6 +28,8 @@ const GRID_S: f64 = 30.0;
 const GRID_S_2: f64 = GRID_S * 0.5;
 const GRID_DIAG: f64 = GRID_S * 1.73205080757; // 1.7... is sqrt(3)
 
+const CHARGE_MVMT_STEP: f64 = 2.0;
+
 const BG_CLR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 const LINES_CLR: [f32; 4] = [0.0, 0.0, 0.7, 0.3];
@@ -217,8 +219,27 @@ impl App {
                 }
             },
             Key::T => {
-                let trans_v = na::Vector3::new(0.0, 2.0, 0.0);
-                self.charges[0] += trans_v;
+                self.charges[0].loc.y -= CHARGE_MVMT_STEP;
+                self.populate_field();
+            },
+            Key::G => {
+                self.charges[0].loc.y += CHARGE_MVMT_STEP;
+                self.populate_field();
+            },
+            Key::H => {
+                self.charges[0].loc.x += CHARGE_MVMT_STEP;
+                self.populate_field();
+            },
+            Key::F => {
+                self.charges[0].loc.x -= CHARGE_MVMT_STEP;
+                self.populate_field();
+            },
+            Key::R => {
+                self.charges[0].loc.z -= CHARGE_MVMT_STEP;
+                self.populate_field();
+            },
+            Key::Y => {
+                self.charges[0].loc.z += CHARGE_MVMT_STEP;
                 self.populate_field();
             },
             _ => {},
