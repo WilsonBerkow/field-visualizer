@@ -64,16 +64,15 @@ fn main() {
                         (j as f64 - 0.0) * GRID_S,
                         (k as f64 - 0.0) * GRID_S);
                     let force = app.chg.force_at(&loc) + app.chg1.force_at(&loc);
-                    let mut arrow = arrow_from_force(&loc, &force);
-                    let norm = force.norm();
-                    max_force = f64_max(max_force, norm);
+                    let arrow = arrow_from_force(&loc, &force);
+                    max_force = f64_max(max_force, force.norm());
                     app.arrows.push(arrow);
                 }
             }
         }
         for arrow in app.arrows.iter_mut() {
             let len = arrow.len();
-            arrow.set_len(len / max_force * (GRID_DIAG * 0.6) + GRID_DIAG * 0.2);
+            arrow.set_len(len / max_force * (GRID_DIAG * 0.7) + GRID_DIAG * 0.1);
             let c = arrow.tail;
             arrow.center_at(c);
         }
@@ -260,7 +259,6 @@ fn transform_in_homo(pt: na::Point3<f64>, mat: &na::Matrix4<f64>) -> na::Point3<
 
 trait VectorField3 {
     fn force_at(&self, p: &na::Point3<f64>) -> na::Vector3<f64>;
-    fn arrow_at(&self, p: &na::Point3<f64>) -> Arrow3;
 }
 
 struct PointCharge {
@@ -278,14 +276,6 @@ fn f64_max(x: f64, y: f64) -> f64 {
     if x > y { x } else { y }
 }
 
-fn pull_inward(p: &na::Point3<f64>, v: &na::Vector3<f64>) -> na::Point3<f64> {
-    na::Point3::new(
-        f64_max(0.0, p.x.abs() - v.x) * p.x.signum(),
-        f64_max(0.0, p.y.abs() - v.y) * p.y.signum(),
-        f64_max(0.0, p.z.abs() - v.z) * p.z.signum()
-    )
-}
-
 fn arrow_from_force(p: &na::Point3<f64>, f: &na::Vector3<f64>) -> Arrow3 {
     let tail = p.clone();
     let head = f.translate(&tail);
@@ -298,17 +288,6 @@ impl VectorField3 for PointCharge {
         let unit_vec = (p.clone() - self.loc).normalize(); // ownership error likely
         let magnitude = self.charge / na::distance_squared(&self.loc, p);
         10000.0 * magnitude * unit_vec
-    }
-
-    fn arrow_at(&self, p: &na::Point3<f64>) -> Arrow3 {
-        //let to_cube_center = na::Vector3::new(GRID_S_2, GRID_S_2, GRID_S_2);
-        //let f = self.force_at(&pull_inward(&p, &to_cube_center));
-        let f = self.force_at(&p);
-        //let tail = pull_inward(&p, &(2.0 * to_cube_center));
-        let tail = p.clone();
-        let head = f.translate(&tail);
-        println!("Force: {}", f);
-        Arrow3 { tail: tail, head: head }
     }
 }
 
@@ -330,7 +309,12 @@ impl Arrow3 {
     }
 
     fn set_len(&mut self, s: f64) {
-        self.head = ((self.head - self.tail).normalize() * s).translate(&self.tail);
+        let mut v = self.head - self.tail;
+        let len = v.norm();
+        if len > 1.0 {
+            v = v * (s / len);
+        }
+        self.head = v.translate(&self.tail);
     }
 
     fn len(&self) -> f64 {
