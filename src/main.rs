@@ -367,7 +367,7 @@ impl Arrow3 {
         // Transform relative to the camera position:
         let headr: na::Point3<f64> = transform_in_homo(self.head, &camera);
         let tailr: na::Point3<f64> = transform_in_homo(self.tail, &camera);
-        if headr.z <= 1.0 && tailr.z <= 1.0 {
+        if headr.z <= NEAR_PLANE_Z || tailr.z <= NEAR_PLANE_Z {
             None
         } else {
             // Project onto "device" surface:
