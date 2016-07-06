@@ -29,6 +29,18 @@ const BG_CLR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 const LINES_CLR: [f32; 4] = [0.0, 0.0, 0.7, 0.3];
 
+const SHOW_GRID: bool = false;
+
+// Maximum and minimum lengths of a field vector:
+const FIELD_VEC_MAX_LEN: f64 = GRID_DIAG * 0.8;
+const FIELD_VEC_MIN_LEN: f64 = GRID_DIAG * 0.1;
+
+const FIELD_VEC_LEN_RANGE: f64 = FIELD_VEC_MAX_LEN - FIELD_VEC_MIN_LEN;
+
+fn f64_max(x: f64, y: f64) -> f64 {
+    if x > y { x } else { y }
+}
+
 fn main() {
     let opengl: OpenGL = OpenGL::V3_2;
     let mut window: Window = WindowSettings::new(
@@ -47,57 +59,23 @@ fn main() {
         grid_arrows: vec![],
         camera: translation3_mat(na::Vector3::new(0.0, 0.0, 91.0)),
         persp: na::PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
-        chg: PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
-        chg1: PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+        charges: vec![
+            PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+            PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+        ],
     };
-    {
-        let mut max_force: f64 = std::f64::NEG_INFINITY;
-        let l = -2;
-        let r = 4;
-        let lx = -4;
-        let rx = 6;
-        for i in lx..rx {
-            for j in l..r {
-                for k in l..r {
-                    let loc = na::Point3::new(
-                        (i as f64 - 0.0) * GRID_S,
-                        (j as f64 - 0.0) * GRID_S,
-                        (k as f64 - 0.0) * GRID_S);
-                    let force = app.chg.force_at(&loc) + app.chg1.force_at(&loc);
-                    let arrow = arrow_from_force(&loc, &force);
-                    max_force = f64_max(max_force, force.norm());
-                    app.arrows.push(arrow);
-                }
-            }
-        }
-        for arrow in app.arrows.iter_mut() {
-            let len = arrow.len();
-            arrow.set_len(len / max_force * (GRID_DIAG * 0.7) + GRID_DIAG * 0.1);
-            let c = arrow.tail;
-            arrow.center_at(c);
-        }
-        //for i in lx..rx {
-        //    for j in l..r {
-        //        app.grid_arrows.push(
-        //            Arrow3::new(
-        //                na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (l - 1) as f64 * GRID_S),
-        //                na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (r - 1) as f64 * GRID_S)
-        //            )
-        //        );
-        //        app.grid_arrows.push(
-        //            Arrow3::new(
-        //                na::Point3::new((lx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
-        //                na::Point3::new((rx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S)
-        //            )
-        //        );
-        //        app.grid_arrows.push(
-        //            Arrow3::new(
-        //                na::Point3::new(i as f64 * GRID_S, (l - 1) as f64 * GRID_S, j as f64 * GRID_S),
-        //                na::Point3::new(i as f64 * GRID_S, (r - 1) as f64 * GRID_S, j as f64 * GRID_S)
-        //            )
-        //        );
-        //    }
-        //}
+
+    // Ranges in x,y,z in which we will draw the field vectors
+    // These are expressed in terms on cubes in the grid, ie.,
+    // in units of GRID_S voxels.
+    let x_range: (i64, i64) = (-4, 6);
+    let y_range: (i64, i64) = (-2, 4);
+    let z_range: (i64, i64) = (-2, 4);
+
+    app.populate_field(x_range, y_range, z_range);
+
+    if SHOW_GRID {
+        app.populate_grid(x_range, y_range, z_range);
     }
 
     while let Some(e) = events.next(&mut window) {
@@ -127,8 +105,7 @@ struct App {
     grid_arrows: Vec<Arrow3>,
     persp: na::PerspectiveMatrix3<f64>,
     camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
-    chg: PointCharge,
-    chg1: PointCharge,
+    charges: Vec<PointCharge>,
 }
 
 impl App {
@@ -233,6 +210,67 @@ impl App {
             _ => {},
         }
     }
+
+    fn populate_field(&mut self, (lx, rx): (i64, i64), (ly, ry): (i64, i64), (lz, rz): (i64, i64)) {
+        // Keep track of stongest value of field so we can scale all
+        // field vectors later and cap the length of the longest one
+        let mut max_field: f64 = std::f64::NEG_INFINITY;
+
+        for i in lx..rx {
+            for j in ly..ry {
+                for k in lz..rz {
+                    let loc = na::Point3::new(
+                        i as f64 * GRID_S,
+                        j as f64 * GRID_S,
+                        k as f64 * GRID_S);
+                    let net_field: na::Vector3<f64> = self.charges.iter()
+                        .map(|chg| chg.force_at(&loc))
+                        .fold(num::Zero::zero(), |a, b| a + b);
+                    max_field = f64_max(max_field, net_field.norm());
+
+                    // Create and push the arrow of length net_field and
+                    // tail at loc.
+                    self.arrows.push(arrow_from_force(&loc, &net_field));
+                    // In the loop below, the arrows will be scaled and
+                    // repositioned for better appearence.
+                }
+            }
+        }
+
+        // Scale each vector to have reasonable lengths and to be
+        // centered around the point whose field they are measuring
+        for arrow in self.arrows.iter_mut() {
+            let len = arrow.len();
+            arrow.set_len(FIELD_VEC_MIN_LEN + len / max_field * FIELD_VEC_LEN_RANGE);
+            let c = arrow.tail;
+            arrow.center_at(c);
+        }
+    }
+
+    fn populate_grid(&mut self, (lx, rx): (i64, i64), (ly, ry): (i64, i64), (lz, rz): (i64, i64)) {
+        for i in lx..rx {
+            for j in ly..ry {
+                self.grid_arrows.push(
+                    Arrow3::new(
+                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (lz - 1) as f64 * GRID_S),
+                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (rz - 1) as f64 * GRID_S)
+                        )
+                    );
+                self.grid_arrows.push(
+                    Arrow3::new(
+                        na::Point3::new((lx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
+                        na::Point3::new((rx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S)
+                        )
+                    );
+                self.grid_arrows.push(
+                    Arrow3::new(
+                        na::Point3::new(i as f64 * GRID_S, (ly - 1) as f64 * GRID_S, j as f64 * GRID_S),
+                        na::Point3::new(i as f64 * GRID_S, (ry - 1) as f64 * GRID_S, j as f64 * GRID_S)
+                        )
+                    );
+            }
+        }
+    }
 }
 
 // The following should be in nalgebra, which implements
@@ -270,10 +308,6 @@ impl PointCharge {
     fn new(charge: f64, loc: na::Point3<f64>) -> PointCharge {
         PointCharge { charge: charge, loc: loc }
     }
-}
-
-fn f64_max(x: f64, y: f64) -> f64 {
-    if x > y { x } else { y }
 }
 
 fn arrow_from_force(p: &na::Point3<f64>, f: &na::Vector3<f64>) -> Arrow3 {
