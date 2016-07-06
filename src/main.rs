@@ -10,9 +10,12 @@ use piston::event_loop::*;
 use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
-use std::f64::consts::PI;
 
 use na::{ Translate, Norm, ToHomogeneous, FromHomogeneous };
+
+use std::f64::consts::PI;
+use std::ops::Add;
+use std::ops::AddAssign;
 
 const WIDTH: u32 = 600;
 const HEIGHT: u32 = 600;
@@ -66,19 +69,19 @@ fn main() {
             PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
             PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
         ],
+
+        // Ranges in x,y,z in which we will draw the field vectors
+        // These are expressed in terms on cubes in the grid, ie.,
+        // in units of GRID_S voxels.
+        x_range: (-4, 6),
+        y_range: (-2, 4),
+        z_range: (-2, 4),
     };
 
-    // Ranges in x,y,z in which we will draw the field vectors
-    // These are expressed in terms on cubes in the grid, ie.,
-    // in units of GRID_S voxels.
-    let x_range: (i64, i64) = (-4, 6);
-    let y_range: (i64, i64) = (-2, 4);
-    let z_range: (i64, i64) = (-2, 4);
-
-    app.populate_field(x_range, y_range, z_range);
+    app.populate_field();
 
     if SHOW_GRID {
-        app.populate_grid(x_range, y_range, z_range);
+        app.populate_grid();
     }
 
     while let Some(e) = events.next(&mut window) {
@@ -109,6 +112,9 @@ struct App {
     persp: na::PerspectiveMatrix3<f64>,
     camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
     charges: Vec<PointCharge>,
+    x_range: (i64, i64),
+    y_range: (i64, i64),
+    z_range: (i64, i64),
 }
 
 impl App {
@@ -210,11 +216,21 @@ impl App {
                     arrow.map_transform(&rotmat.submatrix().to_homogeneous());
                 }
             },
+            Key::T => {
+                let trans_v = na::Vector3::new(0.0, 2.0, 0.0);
+                self.charges[0] += trans_v;
+                self.populate_field();
+            },
             _ => {},
         }
     }
 
-    fn populate_field(&mut self, (lx, rx): (i64, i64), (ly, ry): (i64, i64), (lz, rz): (i64, i64)) {
+    fn populate_field(&mut self) {
+        self.arrows = vec![];
+        let (lx, rx) = self.x_range;
+        let (ly, ry) = self.y_range;
+        let (lz, rz) = self.z_range;
+
         // Keep track of stongest value of field so we can scale all
         // field vectors later and cap the length of the longest one
         let mut max_field: f64 = std::f64::NEG_INFINITY;
@@ -250,7 +266,10 @@ impl App {
         }
     }
 
-    fn populate_grid(&mut self, (lx, rx): (i64, i64), (ly, ry): (i64, i64), (lz, rz): (i64, i64)) {
+    fn populate_grid(&mut self) {
+        let (lx, rx) = self.x_range;
+        let (ly, ry) = self.y_range;
+        let (lz, rz) = self.z_range;
         for i in lx..rx {
             for j in ly..ry {
                 self.grid_arrows.push(
@@ -313,10 +332,63 @@ impl PointCharge {
     }
 }
 
+impl Translate<PointCharge> for na::Vector3<f64> {
+    fn translate(&self, chg: &PointCharge) -> PointCharge {
+        PointCharge::new(chg.charge, self.translate(&chg.loc))
+    }
+    fn inverse_translate(&self, chg: &PointCharge) -> PointCharge {
+        PointCharge::new(chg.charge, self.inverse_translate(&chg.loc))
+    }
+}
+
+impl Add<na::Vector3<f64>> for PointCharge {
+    type Output = PointCharge;
+    fn add(self, rhs: na::Vector3<f64>) -> PointCharge {
+        rhs.translate(&self)
+    }
+}
+
+impl<'a> Add<na::Vector3<f64>> for &'a PointCharge {
+    type Output = PointCharge;
+    fn add(self, rhs: na::Vector3<f64>) -> PointCharge {
+        rhs.translate(self)
+    }
+}
+
+impl<'a> Add<&'a na::Vector3<f64>> for PointCharge {
+    type Output = PointCharge;
+    fn add(self, rhs: &na::Vector3<f64>) -> PointCharge {
+        rhs.translate(&self)
+    }
+}
+
+impl<'a, 'b> Add<&'a na::Vector3<f64>> for &'b PointCharge {
+    type Output = PointCharge;
+    fn add(self, rhs: &na::Vector3<f64>) -> PointCharge {
+        rhs.translate(self)
+    }
+}
+
+impl<'a> AddAssign<na::Vector3<f64>> for PointCharge {
+    fn add_assign(&mut self, rhs: na::Vector3<f64>) {
+        self.loc += rhs;
+    }
+}
+
+impl<'a, 'b> AddAssign<&'a na::Vector3<f64>> for PointCharge {
+    fn add_assign(&mut self, rhs: &na::Vector3<f64>) {
+        // nalgebra does not implement AddAssign<&Vector3> for Point3,
+        // thus this is done field by field
+        self.loc.x = self.loc.x + rhs.x;
+        self.loc.y = self.loc.y + rhs.y;
+        self.loc.z = self.loc.z + rhs.z;
+    }
+}
+
+
 fn arrow_from_force(p: &na::Point3<f64>, f: &na::Vector3<f64>) -> Arrow3 {
     let tail = p.clone();
     let head = f.translate(&tail);
-    println!("Force: {}", f);
     Arrow3 { tail: tail, head: head }
 }
 
