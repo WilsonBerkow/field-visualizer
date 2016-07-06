@@ -52,7 +52,6 @@ fn main() {
     };
     {
         let mut max_force: f64 = std::f64::NEG_INFINITY;
-        //let half_cube = na::Vector3::new(GRID_S_2, GRID_S_2, GRID_S_2);
         let l = -2;
         let r = 4;
         for i in l..r {
@@ -63,7 +62,6 @@ fn main() {
                         (j as f64 - 0.0) * GRID_S,
                         (k as f64 - 0.0) * GRID_S);
                     let force = app.chg.force_at(&loc) + app.chg1.force_at(&loc);
-                    let force = force / force.norm();
                     let mut arrow = arrow_from_force(&loc, &force);
                     let norm = force.norm();
                     max_force = f64_max(max_force, norm);
@@ -72,7 +70,8 @@ fn main() {
             }
         }
         for arrow in app.arrows.iter_mut() {
-            arrow.scale_len((GRID_DIAG * 0.5) / max_force);
+            let len = arrow.len();
+            arrow.set_len(len / max_force * (GRID_DIAG * 0.6) + GRID_DIAG * 0.2);
             let c = arrow.tail;
             arrow.center_at(c);
         }
@@ -326,6 +325,14 @@ impl Arrow3 {
 
     fn scale_len(&mut self, s: f64) {
         self.head = ((self.head - self.tail) * s).translate(&self.tail);
+    }
+
+    fn set_len(&mut self, s: f64) {
+        self.head = ((self.head - self.tail).normalize() * s).translate(&self.tail);
+    }
+
+    fn len(&self) -> f64 {
+        (self.head - self.tail).norm()
     }
 
     fn map_transform(&mut self, mat: &na::Matrix4<f64>) {
