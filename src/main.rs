@@ -12,6 +12,8 @@ use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
 use std::f64::consts::PI;
 
+use na::{ Translate, Norm, ToHomogeneous, FromHomogeneous };
+
 const WIDTH: u32 = 600;
 const HEIGHT: u32 = 600;
 const WIDTHF: f64 = WIDTH as f64;
@@ -19,10 +21,12 @@ const HEIGHTF: f64 = HEIGHT as f64;
 const WIDTHF_2: f64 = WIDTHF * 0.5;
 const HEIGHTF_2: f64 = HEIGHTF * 0.5;
 
-const GRID_S: f64 = 20.0;
+const GRID_S: f64 = 30.0;
 const GRID_S_2: f64 = GRID_S * 0.5;
+const GRID_DIAG: f64 = GRID_S * 1.73205080757;//std::f64::consts::SQRT_3;
 
-const BG_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+const BG_CLR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
 fn main() {
     let opengl: OpenGL = OpenGL::V3_2;
@@ -41,16 +45,29 @@ fn main() {
         arrows: vec![],
         camera: translation3_mat(na::Vector3::new(0.0, 0.0, 91.0)),
         persp: na::PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
-        chg: PointCharge::new(1.0, na::Point3::new(GRID_S_2, GRID_S_2, GRID_S_2)),
+        chg: PointCharge::new(1.0, na::Point3::new(0.0, 0.0, 0.0)),//GRID_S_2, GRID_S_2, GRID_S_2)),
     };
-    for i in -1..3 {
-        for j in -1..3 {
-            for k in -1..3 {
-                app.arrows.push(app.chg.arrow_at(&na::Point3::new(
-                            i as f64 * GRID_S,
-                            j as f64 * GRID_S,
-                            k as f64 * GRID_S)));
+    {
+        let mut max_force: f64 = std::f64::NEG_INFINITY;
+        //let mut min_force: f64 = std::f64::INFINITY;
+        for i in -2..3 {
+            for j in -2..3 {
+                for k in -2..3 {
+                    let loc = &na::Point3::new(
+                        (i as f64 - 0.0) * GRID_S,
+                        (j as f64 - 0.0) * GRID_S,
+                        (k as f64 - 0.0) * GRID_S);
+                    let arrow = app.chg.arrow_at(loc);
+                    let norm = loc.as_vector().norm();
+                    max_force = f64_max(max_force, norm);
+                    //min_force = f64_min(min_force, norm);
+                    app.arrows.push(arrow);
+                }
             }
+        }
+        //let range = max_force - min_force;
+        for arrow in app.arrows.iter_mut() {
+            arrow.scale_len((GRID_DIAG * 0.5) / max_force);
         }
     }
 
@@ -99,7 +116,6 @@ impl App {
     }
 
     fn keypress(&mut self, key: Key) {
-        use na::ToHomogeneous;
         match key {
             Key::Up => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
@@ -189,7 +205,6 @@ fn ref_mat4_mul(mat: &na::Matrix4<f64>, right: na::Point4<f64>) -> na::Point4<f6
 }
 
 fn transform_in_homo(pt: na::Point3<f64>, mat: &na::Matrix4<f64>) -> na::Point3<f64> {
-    use na::{ ToHomogeneous, FromHomogeneous };
     <na::Point3<f64> as FromHomogeneous<na::Point4<f64>>>::from(&(ref_mat4_mul(mat, pt.to_homogeneous())))
 }
 
@@ -209,18 +224,29 @@ impl PointCharge {
     }
 }
 
+fn f64_max(x: f64, y: f64) -> f64 {
+    if x > y { x } else { y }
+}
+
+fn pull_inward(p: &na::Point3<f64>, v: &na::Vector3<f64>) -> na::Point3<f64> {
+    na::Point3::new(
+        f64_max(0.0, p.x.abs() - v.x) * p.x.signum(),
+        f64_max(0.0, p.y.abs() - v.y) * p.y.signum(),
+        f64_max(0.0, p.z.abs() - v.z) * p.z.signum()
+    )
+}
+
 impl VectorField3 for PointCharge {
     fn force_at(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
-        use na::Norm;
         let unit_vec = (p.clone() - self.loc).normalize(); // ownership error likely
         let magnitude = self.charge / na::distance_squared(&self.loc, p);
         10000.0 * magnitude * unit_vec
     }
 
     fn arrow_at(&self, p: &na::Point3<f64>) -> Arrow3 {
-        use na::Translate;
-        let tail = p.clone();
-        let f = self.force_at(p);
+        let to_cube_center = na::Vector3::new(GRID_S_2, GRID_S_2, GRID_S_2);
+        let f = self.force_at(&pull_inward(&p, &to_cube_center));
+        let tail = pull_inward(&p, &(2.0 * to_cube_center));
         let head = f.translate(&tail);
         println!("Force: {}", f);
         Arrow3 { tail: tail, head: head }
@@ -233,11 +259,15 @@ struct Arrow3 {
 }
 
 impl Arrow3 {
-    fn new(tx: f64, ty: f64, tz: f64, hx: f64, hy: f64, hz: f64) -> Arrow3 {
+    fn new(tail: na::Point3<f64>, head: na::Point3<f64>) -> Arrow3 {
         Arrow3 {
-            tail: na::Point3::new(tx, ty, tz),
-            head: na::Point3::new(hx, hy, hz),
+            tail: tail,
+            head: head,
         }
+    }
+
+    fn scale_len(&mut self, s: f64) {
+        self.head = ((self.head - self.tail) * s).translate(&self.tail);
     }
 
     fn map_transform(&mut self, mat: &na::Matrix4<f64>) {
@@ -245,29 +275,34 @@ impl Arrow3 {
         self.head = transform_in_homo(self.head, mat);
     }
 
-    fn project_to_viewport(&self, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) -> Arrow {
+    fn project_to_viewport(&self, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) -> Option<Arrow> {
         // Transform relative to the camera position:
         let headr: na::Point3<f64> = transform_in_homo(self.head, &camera);
         let tailr: na::Point3<f64> = transform_in_homo(self.tail, &camera);
-        // Project onto "device" surface:
-        let head_prime = persp.project_point(&headr);
-        let tail_prime = persp.project_point(&tailr);
-        // Trasform to viewport surface:
-        Arrow::new(
-            na::Point2::new(
-                tail_prime.x * 150.0 + WIDTHF_2,
-                tail_prime.y * 150.0 + HEIGHTF_2,
-            ),
-            na::Point2::new(
-                head_prime.x * 150.0 + WIDTHF_2,
-                head_prime.y * 150.0 + HEIGHTF_2,
-            )
-        )
+        if headr.z <= 1.0 && tailr.z <= 1.0 {
+            None
+        } else {
+            // Project onto "device" surface:
+            let head_prime = persp.project_point(&headr);
+            let tail_prime = persp.project_point(&tailr);
+            // Trasform to viewport surface:
+            Some(Arrow::new(
+                na::Point2::new(
+                    tail_prime.x * 150.0 + WIDTHF_2,
+                    tail_prime.y * 150.0 + HEIGHTF_2,
+                ),
+                na::Point2::new(
+                    head_prime.x * 150.0 + WIDTHF_2,
+                    head_prime.y * 150.0 + HEIGHTF_2,
+                )
+            ))
+        }
     }
 
     fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) {
-        let a2: Arrow = self.project_to_viewport(persp, camera);
-        a2.draw(c, gl);
+        if let Some(a2d) = self.project_to_viewport(persp, camera) {
+            a2d.draw(c, gl);
+        }
     }
 }
 
@@ -286,7 +321,7 @@ impl Arrow {
 
     fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
         let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
-        let line_style = graphics::Line::new([1.0, 1.0, 1.0, 1.0], 1.0);
+        let line_style = graphics::Line::new(ARROW_CLR, 1.0);
         line_style.draw_arrow(path, 5.0, &c.draw_state, c.transform, gl);
     }
 }
