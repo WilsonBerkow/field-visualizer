@@ -31,6 +31,9 @@ const LINES_CLR: [f32; 4] = [0.0, 0.0, 0.7, 0.3];
 
 const SHOW_GRID: bool = false;
 
+const NEAR_PLANE_Z: f64 = 1.0;
+const FAR_PLANE_Z: f64 = 100.0;
+
 // Maximum and minimum lengths of a field vector:
 const FIELD_VEC_MAX_LEN: f64 = GRID_DIAG * 0.8;
 const FIELD_VEC_MIN_LEN: f64 = GRID_DIAG * 0.1;
@@ -57,8 +60,8 @@ fn main() {
         gl: GlGraphics::new(opengl),
         arrows: vec![],
         grid_arrows: vec![],
-        camera: translation3_mat(na::Vector3::new(0.0, 0.0, 91.0)),
-        persp: na::PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
+        camera: translation3_mat(na::Vector3::new(0.0, -GRID_S_2, 200.0)),
+        persp: na::PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
         charges: vec![
             PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
             PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
