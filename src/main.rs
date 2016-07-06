@@ -45,20 +45,25 @@ fn main() {
         arrows: vec![],
         camera: translation3_mat(na::Vector3::new(0.0, 0.0, 91.0)),
         persp: na::PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
-        chg: PointCharge::new(1.0, na::Point3::new(0.0, 0.0, 0.0)),//GRID_S_2, GRID_S_2, GRID_S_2)),
+        chg: PointCharge::new(10.0, na::Point3::new(3.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+        chg1: PointCharge::new(-10.0, na::Point3::new(-3.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
     };
     {
         let mut max_force: f64 = std::f64::NEG_INFINITY;
         //let mut min_force: f64 = std::f64::INFINITY;
-        for i in -2..3 {
-            for j in -2..3 {
-                for k in -2..3 {
-                    let loc = &na::Point3::new(
+        let l = -2;
+        let r = 4;
+        for i in l..r {
+            for j in l..r {
+                for k in l..r {
+                    let loc = na::Point3::new(
                         (i as f64 - 0.0) * GRID_S,
                         (j as f64 - 0.0) * GRID_S,
                         (k as f64 - 0.0) * GRID_S);
-                    let arrow = app.chg.arrow_at(loc);
-                    let norm = loc.as_vector().norm();
+                    //let arrow = app.chg.arrow_at(loc);
+                    let force = app.chg.force_at(&loc) + app.chg1.force_at(&loc);
+                    let arrow = arrow_from_force(&loc, &force);
+                    let norm = force.norm();
                     max_force = f64_max(max_force, norm);
                     //min_force = f64_min(min_force, norm);
                     app.arrows.push(arrow);
@@ -98,6 +103,7 @@ struct App {
     persp: na::PerspectiveMatrix3<f64>,
     camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
     chg: PointCharge,
+    chg1: PointCharge,
 }
 
 impl App {
@@ -236,6 +242,13 @@ fn pull_inward(p: &na::Point3<f64>, v: &na::Vector3<f64>) -> na::Point3<f64> {
     )
 }
 
+fn arrow_from_force(p: &na::Point3<f64>, f: &na::Vector3<f64>) -> Arrow3 {
+    let tail = p.clone();
+    let head = f.translate(&tail);
+    println!("Force: {}", f);
+    Arrow3 { tail: tail, head: head }
+}
+
 impl VectorField3 for PointCharge {
     fn force_at(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
         let unit_vec = (p.clone() - self.loc).normalize(); // ownership error likely
@@ -244,9 +257,11 @@ impl VectorField3 for PointCharge {
     }
 
     fn arrow_at(&self, p: &na::Point3<f64>) -> Arrow3 {
-        let to_cube_center = na::Vector3::new(GRID_S_2, GRID_S_2, GRID_S_2);
-        let f = self.force_at(&pull_inward(&p, &to_cube_center));
-        let tail = pull_inward(&p, &(2.0 * to_cube_center));
+        //let to_cube_center = na::Vector3::new(GRID_S_2, GRID_S_2, GRID_S_2);
+        //let f = self.force_at(&pull_inward(&p, &to_cube_center));
+        let f = self.force_at(&p);
+        //let tail = pull_inward(&p, &(2.0 * to_cube_center));
+        let tail = p.clone();
         let head = f.translate(&tail);
         println!("Force: {}", f);
         Arrow3 { tail: tail, head: head }
