@@ -47,14 +47,16 @@ fn main() {
         grid_arrows: vec![],
         camera: translation3_mat(na::Vector3::new(0.0, 0.0, 91.0)),
         persp: na::PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
-        chg: PointCharge::new(10.0, na::Point3::new(3.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
-        chg1: PointCharge::new(-10.0, na::Point3::new(-3.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+        chg: PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+        chg1: PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
     };
     {
         let mut max_force: f64 = std::f64::NEG_INFINITY;
         let l = -2;
         let r = 4;
-        for i in l..r {
+        let lx = -4;
+        let rx = 6;
+        for i in lx..rx {
             for j in l..r {
                 for k in l..r {
                     let loc = na::Point3::new(
@@ -75,28 +77,28 @@ fn main() {
             let c = arrow.tail;
             arrow.center_at(c);
         }
-        for i in l..r {
-            for j in l..r {
-                app.grid_arrows.push(
-                    Arrow3::new(
-                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (l - 1) as f64 * GRID_S),
-                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (r - 1) as f64 * GRID_S)
-                    )
-                );
-                app.grid_arrows.push(
-                    Arrow3::new(
-                        na::Point3::new((l - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
-                        na::Point3::new((r - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S)
-                    )
-                );
-                app.grid_arrows.push(
-                    Arrow3::new(
-                        na::Point3::new(i as f64 * GRID_S, (l - 1) as f64 * GRID_S, j as f64 * GRID_S),
-                        na::Point3::new(i as f64 * GRID_S, (r - 1) as f64 * GRID_S, j as f64 * GRID_S)
-                    )
-                );
-            }
-        }
+        //for i in lx..rx {
+        //    for j in l..r {
+        //        app.grid_arrows.push(
+        //            Arrow3::new(
+        //                na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (l - 1) as f64 * GRID_S),
+        //                na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (r - 1) as f64 * GRID_S)
+        //            )
+        //        );
+        //        app.grid_arrows.push(
+        //            Arrow3::new(
+        //                na::Point3::new((lx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
+        //                na::Point3::new((rx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S)
+        //            )
+        //        );
+        //        app.grid_arrows.push(
+        //            Arrow3::new(
+        //                na::Point3::new(i as f64 * GRID_S, (l - 1) as f64 * GRID_S, j as f64 * GRID_S),
+        //                na::Point3::new(i as f64 * GRID_S, (r - 1) as f64 * GRID_S, j as f64 * GRID_S)
+        //            )
+        //        );
+        //    }
+        //}
     }
 
     while let Some(e) = events.next(&mut window) {
