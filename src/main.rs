@@ -27,6 +27,7 @@ const GRID_DIAG: f64 = GRID_S * 1.73205080757;//std::f64::consts::SQRT_3;
 
 const BG_CLR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+const LINES_CLR: [f32; 4] = [0.0, 0.0, 0.7, 0.3];
 
 fn main() {
     let opengl: OpenGL = OpenGL::V3_2;
@@ -43,6 +44,7 @@ fn main() {
     let mut app: App = App {
         gl: GlGraphics::new(opengl),
         arrows: vec![],
+        grid_arrows: vec![],
         camera: translation3_mat(na::Vector3::new(0.0, 0.0, 91.0)),
         persp: na::PerspectiveMatrix3::new(1.0, 200.0, 0.0, 100.0),
         chg: PointCharge::new(10.0, na::Point3::new(3.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
@@ -50,7 +52,7 @@ fn main() {
     };
     {
         let mut max_force: f64 = std::f64::NEG_INFINITY;
-        //let mut min_force: f64 = std::f64::INFINITY;
+        //let half_cube = na::Vector3::new(GRID_S_2, GRID_S_2, GRID_S_2);
         let l = -2;
         let r = 4;
         for i in l..r {
@@ -60,19 +62,41 @@ fn main() {
                         (i as f64 - 0.0) * GRID_S,
                         (j as f64 - 0.0) * GRID_S,
                         (k as f64 - 0.0) * GRID_S);
-                    //let arrow = app.chg.arrow_at(loc);
                     let force = app.chg.force_at(&loc) + app.chg1.force_at(&loc);
-                    let arrow = arrow_from_force(&loc, &force);
+                    let force = force / force.norm();
+                    let mut arrow = arrow_from_force(&loc, &force);
                     let norm = force.norm();
                     max_force = f64_max(max_force, norm);
-                    //min_force = f64_min(min_force, norm);
                     app.arrows.push(arrow);
                 }
             }
         }
-        //let range = max_force - min_force;
         for arrow in app.arrows.iter_mut() {
             arrow.scale_len((GRID_DIAG * 0.5) / max_force);
+            let c = arrow.tail;
+            arrow.center_at(c);
+        }
+        for i in l..r {
+            for j in l..r {
+                app.grid_arrows.push(
+                    Arrow3::new(
+                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (l - 1) as f64 * GRID_S),
+                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (r - 1) as f64 * GRID_S)
+                    )
+                );
+                app.grid_arrows.push(
+                    Arrow3::new(
+                        na::Point3::new((l - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
+                        na::Point3::new((r - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S)
+                    )
+                );
+                app.grid_arrows.push(
+                    Arrow3::new(
+                        na::Point3::new(i as f64 * GRID_S, (l - 1) as f64 * GRID_S, j as f64 * GRID_S),
+                        na::Point3::new(i as f64 * GRID_S, (r - 1) as f64 * GRID_S, j as f64 * GRID_S)
+                    )
+                );
+            }
         }
     }
 
@@ -100,6 +124,7 @@ fn translation3_mat<T: na::BaseNum>(v: na::Vector3<T>) -> na::Matrix4<T> {
 struct App {
     gl: GlGraphics,
     arrows: Vec<Arrow3>,
+    grid_arrows: Vec<Arrow3>,
     persp: na::PerspectiveMatrix3<f64>,
     camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
     chg: PointCharge,
@@ -117,6 +142,12 @@ impl App {
             let cam = self.camera;
             self.gl.draw(args.viewport(), |c, gl| {
                 arrow.draw(c, gl, persp, cam.clone());
+            });
+        }
+        for arrow in &self.grid_arrows {
+            let cam = self.camera;
+            self.gl.draw(args.viewport(), |c, gl| {
+                arrow.draw_no_head(c, gl, persp, cam.clone());
             });
         }
     }
@@ -168,10 +199,16 @@ impl App {
                 for arrow in self.arrows.iter_mut() {
                     arrow.map_transform(&rotmat.submatrix().to_homogeneous());
                 }
+                for arrow in self.grid_arrows.iter_mut() {
+                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
+                }
             },
             Key::K => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
                 for arrow in self.arrows.iter_mut() {
+                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
+                }
+                for arrow in self.grid_arrows.iter_mut() {
                     arrow.map_transform(&rotmat.submatrix().to_homogeneous());
                 }
             },
@@ -180,10 +217,16 @@ impl App {
                 for arrow in self.arrows.iter_mut() {
                     arrow.map_transform(&rotmat.submatrix().to_homogeneous());
                 }
+                for arrow in self.grid_arrows.iter_mut() {
+                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
+                }
             },
             Key::J => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
                 for arrow in self.arrows.iter_mut() {
+                    arrow.map_transform(&rotmat.submatrix().to_homogeneous());
+                }
+                for arrow in self.grid_arrows.iter_mut() {
                     arrow.map_transform(&rotmat.submatrix().to_homogeneous());
                 }
             },
@@ -319,6 +362,18 @@ impl Arrow3 {
             a2d.draw(c, gl);
         }
     }
+
+    fn draw_no_head(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) {
+        if let Some(a2d) = self.project_to_viewport(persp, camera) {
+            a2d.draw_no_head(c, gl);
+        }
+    }
+
+    fn center_at(&mut self, c: na::Point3<f64>) {
+        let diff = (self.head - self.tail) * 0.5;
+        self.head = c + diff;
+        self.tail = c - diff;
+    }
 }
 
 struct Arrow {
@@ -338,5 +393,11 @@ impl Arrow {
         let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
         let line_style = graphics::Line::new(ARROW_CLR, 1.0);
         line_style.draw_arrow(path, 5.0, &c.draw_state, c.transform, gl);
+    }
+
+    fn draw_no_head(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
+        let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
+        let line_style = graphics::Line::new(LINES_CLR, 1.0);
+        line_style.draw(path, &c.draw_state, c.transform, gl);
     }
 }
