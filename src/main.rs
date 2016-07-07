@@ -24,7 +24,7 @@ const HEIGHTF: f64 = HEIGHT as f64;
 const WIDTHF_2: f64 = WIDTHF * 0.5;
 const HEIGHTF_2: f64 = HEIGHTF * 0.5;
 
-const GRID_S: f64 = 30.0;
+const GRID_S: f64 = 15.0;
 const GRID_S_2: f64 = GRID_S * 0.5;
 const GRID_DIAG: f64 = GRID_S * 1.73205080757; // 1.7... is sqrt(3)
 
@@ -35,6 +35,9 @@ const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 const LINES_CLR: [f32; 4] = [0.0, 0.0, 0.7, 0.3];
 
 const SHOW_GRID: bool = false;
+
+const POTENTIAL_SHADING: bool = false;
+const COLORFUL_POTENTIAL: bool = false;
 
 const NEAR_PLANE_Z: f64 = 1.0;
 const FAR_PLANE_Z: f64 = 100.0;
@@ -252,6 +255,11 @@ impl App {
         // field vectors later and cap the length of the longest one
         let mut max_field: f64 = std::f64::NEG_INFINITY;
 
+        // Same for potential, for alpha of arrows
+        let mut max_abs_potential: f64 = std::f64::NEG_INFINITY;
+
+        let mut field: Vec<(na::Point3<f64>, FieldData)> = vec![];
+
         for i in lx..rx {
             for j in ly..ry {
                 for k in lz..rz {
@@ -259,28 +267,57 @@ impl App {
                         i as f64 * GRID_S,
                         j as f64 * GRID_S,
                         k as f64 * GRID_S);
-                    let net_field: na::Vector3<f64> = self.charges.iter()
-                        .map(|chg| chg.force_at(&loc))
-                        .fold(num::Zero::zero(), |a, b| a + b);
-                    max_field = f64_max(max_field, net_field.norm());
+                    let mut field_data: FieldData = self.charges.iter()
+                        .map(|chg| chg.field_data_at(&loc))
+                        .fold(num::Zero::zero(), |f0, f1| f0 + f1);
+                    field_data.update_norm();
+                    max_field = f64_max(max_field, field_data.force_mag);
+                    max_abs_potential = f64_max(max_abs_potential, field_data.potential.abs());
 
-                    // Create and push the arrow of length net_field and
-                    // tail at loc.
-                    self.arrows.push(arrow_from_force(&loc, &net_field));
-                    // In the loop below, the arrows will be scaled and
-                    // repositioned for better appearence.
+                    field.push((loc, field_data));
                 }
             }
         }
 
-        // Scale each vector to have reasonable lengths and to be
-        // centered around the point whose field they are measuring
-        for arrow in self.arrows.iter_mut() {
-            let len = arrow.len();
-            arrow.set_len(FIELD_VEC_MIN_LEN + len / max_field * FIELD_VEC_LEN_RANGE);
-            let c = arrow.tail;
-            arrow.center_at(c);
+        for (loc, field_data) in field {
+            let rel_mag = field_data.force_mag / max_field;
+            let rel_pot = (1.0 + field_data.potential / max_abs_potential) / 2.0;
+
+            let length = FIELD_VEC_MIN_LEN + rel_mag * FIELD_VEC_LEN_RANGE;
+            let adjusted_pot = (1.0 - 0.7 * (1.0 - rel_pot)) as f32; // So none are at 0.0
+            let clr = if POTENTIAL_SHADING {
+                // clr changes based on potential
+                if COLORFUL_POTENTIAL {
+                    // Use a scale from red to blue
+                    if adjusted_pot > 0.0 {
+                        [adjusted_pot, 0.0, 1.0 - adjusted_pot, 1.0]
+                    } else {
+                        [1.0 + adjusted_pot, 0.0, -adjusted_pot, 1.0]
+                    }
+                } else {
+                    [0.0, 0.0, 0.0, adjusted_pot]
+                }
+            } else {
+                // clr changes based on field magnitude
+                [0.0, 0.0, 0.0, (rel_mag * 2.2) as f32]
+            };
+
+            // loc is the center of the arrow stem
+            let arrow_vec = length * field_data.force_vec.normalize();
+            let tail = loc - arrow_vec * 0.5;
+            let head = loc + arrow_vec * 0.5;
+            self.arrows.push(Arrow3::from_to_clr(tail, head, clr));
         }
+        // // Scale each vector to have reasonable lengths and to be
+        // // centered around the point whose field they are measuring
+        // for arrow in self.arrows.iter_mut() {
+        //     let len = arrow.len();
+        //     let strength_lvl = len / max_field;
+        //     arrow.clr = [0.0, 0.0, 0.0, 1.0 - 0.9 * (1.0 - strength_lvl.sqrt()) as f32];
+        //     arrow.set_len(FIELD_VEC_MIN_LEN + strength_lvl * FIELD_VEC_LEN_RANGE);
+        //     let c = arrow.tail;
+        //     arrow.center_at(c);
+        // }
     }
 
     fn populate_grid(&mut self) {
@@ -290,21 +327,24 @@ impl App {
         for i in lx..rx {
             for j in ly..ry {
                 self.grid_arrows.push(
-                    Arrow3::new(
+                    Arrow3::from_to_clr(
                         na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (lz - 1) as f64 * GRID_S),
-                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (rz - 1) as f64 * GRID_S)
+                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (rz - 1) as f64 * GRID_S),
+                        LINES_CLR
                         )
                     );
                 self.grid_arrows.push(
-                    Arrow3::new(
+                    Arrow3::from_to_clr(
                         na::Point3::new((lx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
-                        na::Point3::new((rx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S)
+                        na::Point3::new((rx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
+                        LINES_CLR
                         )
                     );
                 self.grid_arrows.push(
-                    Arrow3::new(
+                    Arrow3::from_to_clr(
                         na::Point3::new(i as f64 * GRID_S, (ly - 1) as f64 * GRID_S, j as f64 * GRID_S),
-                        na::Point3::new(i as f64 * GRID_S, (ry - 1) as f64 * GRID_S, j as f64 * GRID_S)
+                        na::Point3::new(i as f64 * GRID_S, (ry - 1) as f64 * GRID_S, j as f64 * GRID_S),
+                        LINES_CLR
                         )
                     );
             }
@@ -354,6 +394,48 @@ fn transform_in_homo(pt: na::Point3<f64>, mat: &na::Matrix4<f64>) -> na::Point3<
 
 trait VectorField3 {
     fn force_at(&self, p: &na::Point3<f64>) -> na::Vector3<f64>;
+    fn potential_at(&self, p: &na::Point3<f64>) -> f64;
+    fn field_data_at(&self, p: &na::Point3<f64>) -> FieldData;
+}
+
+struct FieldData {
+    force_vec: na::Vector3<f64>, // direction and unscaled strength of field
+    force_mag: f64, // cached norm of force_vec, updated manually
+    potential: f64, // potential before scaling relative to field as a whole
+}
+
+impl FieldData {
+    fn new(force_vec: na::Vector3<f64>, mag: f64, pot: f64) -> FieldData {
+        FieldData {
+            force_vec: force_vec,
+            force_mag: mag,
+            potential: pot,
+        }
+    }
+
+    fn update_norm(&mut self) {
+        self.force_mag = self.force_vec.norm();
+    }
+}
+
+impl num::Zero for FieldData {
+    fn zero() -> FieldData { FieldData::new(num::Zero::zero(), 0.0, 0.0) }
+    fn is_zero(&self) -> bool {
+        self.force_vec.is_zero()
+            && self.potential.is_zero()
+    }
+
+}
+
+impl Add<FieldData> for FieldData {
+    type Output = FieldData;
+    fn add(self, right: FieldData) -> FieldData {
+        FieldData::new(
+            self.force_vec + right.force_vec,
+            self.force_mag, // not updated
+            self.potential + right.potential
+        )
+    }
 }
 
 struct PointCharge {
@@ -421,48 +503,50 @@ impl<'a, 'b> AddAssign<&'a na::Vector3<f64>> for PointCharge {
 }
 
 
-fn arrow_from_force(p: &na::Point3<f64>, f: &na::Vector3<f64>) -> Arrow3 {
-    let tail = p.clone();
-    let head = f.translate(&tail);
-    Arrow3 { tail: tail, head: head }
-}
-
+const FIELD_SCALE_FACTOR: f64 = 10000.0;
 impl VectorField3 for PointCharge {
     fn force_at(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
-        let unit_vec = (p.clone() - self.loc).normalize(); // ownership error likely
+        let unit_vec = (p.clone() - self.loc).normalize();
         let magnitude = self.charge / na::distance_squared(&self.loc, p);
-        10000.0 * magnitude * unit_vec
+        FIELD_SCALE_FACTOR * magnitude * unit_vec
+    }
+    fn potential_at(&self, p: &na::Point3<f64>) -> f64 {
+        FIELD_SCALE_FACTOR * self.charge / na::distance(&self.loc, p)
+    }
+    fn field_data_at(&self, p: &na::Point3<f64>) -> FieldData {
+        let unit_vec = (p.clone() - self.loc).normalize();
+        let d_squared = na::distance_squared(&self.loc, p);
+        let force_mag = FIELD_SCALE_FACTOR * self.charge / d_squared;
+        let potential = FIELD_SCALE_FACTOR * self.charge / d_squared.sqrt();
+        FieldData {
+            force_vec: unit_vec * force_mag,
+            force_mag: force_mag,
+            potential: potential,
+        }
     }
 }
 
 struct Arrow3 {
     tail: na::Point3<f64>,
     head: na::Point3<f64>,
+    clr: [f32; 4],
 }
 
 impl Arrow3 {
-    fn new(tail: na::Point3<f64>, head: na::Point3<f64>) -> Arrow3 {
+    fn from_to_clr(tail: na::Point3<f64>, head: na::Point3<f64>, clr: [f32; 4]) -> Arrow3 {
         Arrow3 {
             tail: tail,
             head: head,
+            clr: clr,
         }
     }
 
-    fn scale_len(&mut self, s: f64) {
-        self.head = ((self.head - self.tail) * s).translate(&self.tail);
-    }
-
-    fn set_len(&mut self, s: f64) {
-        let mut v = self.head - self.tail;
-        let len = v.norm();
-        if len > 1.0 {
-            v = v * (s / len);
+    fn from_to(tail: na::Point3<f64>, head: na::Point3<f64>) -> Arrow3 {
+        Arrow3 {
+            tail: tail,
+            head: head,
+            clr: ARROW_CLR,
         }
-        self.head = v.translate(&self.tail);
-    }
-
-    fn len(&self) -> f64 {
-        (self.head - self.tail).norm()
     }
 
     fn map_transform(&mut self, mat: &na::Matrix4<f64>) {
@@ -481,7 +565,7 @@ impl Arrow3 {
             let head_prime = persp.project_point(&headr);
             let tail_prime = persp.project_point(&tailr);
             // Trasform to viewport surface:
-            Some(Arrow::new(
+            Some(Arrow::from_to_clr(
                 na::Point2::new(
                     tail_prime.x * 150.0 + WIDTHF_2,
                     tail_prime.y * 150.0 + HEIGHTF_2,
@@ -489,7 +573,8 @@ impl Arrow3 {
                 na::Point2::new(
                     head_prime.x * 150.0 + WIDTHF_2,
                     head_prime.y * 150.0 + HEIGHTF_2,
-                )
+                ),
+                self.clr,
             ))
         }
     }
@@ -505,36 +590,40 @@ impl Arrow3 {
             a2d.draw_no_head(c, gl);
         }
     }
-
-    fn center_at(&mut self, c: na::Point3<f64>) {
-        let diff = (self.head - self.tail) * 0.5;
-        self.head = c + diff;
-        self.tail = c - diff;
-    }
 }
 
 struct Arrow {
     tail: na::Point2<f64>,
     head: na::Point2<f64>,
+    clr: [f32; 4],
 }
 
 impl Arrow {
-    fn new(tail: na::Point2<f64>, head: na::Point2<f64>) -> Arrow {
+    fn from_to_clr(tail: na::Point2<f64>, head: na::Point2<f64>, clr: [f32; 4]) -> Arrow {
         Arrow {
             tail: tail,
             head: head,
+            clr: clr,
+        }
+    }
+
+    fn from_to(tail: na::Point2<f64>, head: na::Point2<f64>) -> Arrow {
+        Arrow {
+            tail: tail,
+            head: head,
+            clr: ARROW_CLR,
         }
     }
 
     fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
         let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
-        let line_style = graphics::Line::new(ARROW_CLR, 1.0);
+        let line_style = graphics::Line::new(self.clr, 1.0);
         line_style.draw_arrow(path, 5.0, &c.draw_state, c.transform, gl);
     }
 
     fn draw_no_head(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
         let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
-        let line_style = graphics::Line::new(LINES_CLR, 1.0);
+        let line_style = graphics::Line::new(self.clr, 1.0);
         line_style.draw(path, &c.draw_state, c.transform, gl);
     }
 }
