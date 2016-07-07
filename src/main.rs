@@ -10,43 +10,18 @@ use piston::event_loop::*;
 use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
-
-use na::{ Translate, Norm, ToHomogeneous, FromHomogeneous };
+use na::{ Norm, ToHomogeneous };
 
 use std::f64::consts::PI;
-use std::ops::Add;
-use std::ops::AddAssign;
 
-const WIDTH: u32 = 600;
-const HEIGHT: u32 = 600;
-const WIDTHF: f64 = WIDTH as f64;
-const HEIGHTF: f64 = HEIGHT as f64;
-const WIDTHF_2: f64 = WIDTHF * 0.5;
-const HEIGHTF_2: f64 = HEIGHTF * 0.5;
+mod arrow;
+pub use arrow::Arrow3;
 
-const GRID_S: f64 = 15.0;
-const GRID_S_2: f64 = GRID_S * 0.5;
-const GRID_DIAG: f64 = GRID_S * 1.73205080757; // 1.7... is sqrt(3)
+mod consts;
+use consts::*;
 
-const CHARGE_MVMT_STEP: f64 = GRID_S;
-
-const BG_CLR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
-const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
-const LINES_CLR: [f32; 4] = [0.0, 0.0, 0.7, 0.3];
-
-const SHOW_GRID: bool = false;
-
-const POTENTIAL_SHADING: bool = false;
-const COLORFUL_POTENTIAL: bool = false;
-
-const NEAR_PLANE_Z: f64 = 1.0;
-const FAR_PLANE_Z: f64 = 100.0;
-
-// Maximum and minimum lengths of a field vector:
-const FIELD_VEC_MAX_LEN: f64 = GRID_DIAG * 0.8;
-const FIELD_VEC_MIN_LEN: f64 = GRID_DIAG * 0.1;
-
-const FIELD_VEC_LEN_RANGE: f64 = FIELD_VEC_MAX_LEN - FIELD_VEC_MIN_LEN;
+mod field;
+use field::*;
 
 fn f64_max(x: f64, y: f64) -> f64 {
     if x > y { x } else { y }
@@ -258,6 +233,16 @@ struct FieldView {
     persp: na::PerspectiveMatrix3<f64>,
 }
 
+impl VectorField3 for FieldView {
+    fn field_data_at(&self, p: &na::Point3<f64>) -> FieldData {
+        let mut field_data: FieldData = self.charges.iter()
+            .map(|chg| chg.field_data_at(&p))
+            .fold(num::Zero::zero(), |f0, f1| f0 + f1);
+        field_data.update_norm();
+        field_data
+    }
+}
+
 impl FieldView {
     fn render(&self, gl: &mut GlGraphics, args: &RenderArgs) {
         graphics::clear(BG_CLR, gl);
@@ -286,7 +271,7 @@ impl FieldView {
         // field vectors later and cap the length of the longest one
         let mut max_field: f64 = std::f64::NEG_INFINITY;
 
-        // Same for potential, for alpha of arrows
+        // Same for potential, for color or alpha
         let mut max_abs_potential: f64 = std::f64::NEG_INFINITY;
 
         let mut field: Vec<(na::Point3<f64>, FieldData)> = vec![];
@@ -298,10 +283,7 @@ impl FieldView {
                         i as f64 * GRID_S,
                         j as f64 * GRID_S,
                         k as f64 * GRID_S);
-                    let mut field_data: FieldData = self.charges.iter()
-                        .map(|chg| chg.field_data_at(&loc))
-                        .fold(num::Zero::zero(), |f0, f1| f0 + f1);
-                    field_data.update_norm();
+                    let field_data = self.field_data_at(&loc);
                     max_field = f64_max(max_field, field_data.force_mag);
                     max_abs_potential = f64_max(max_abs_potential, field_data.potential.abs());
 
@@ -339,16 +321,6 @@ impl FieldView {
             let head = loc + arrow_vec * 0.5;
             self.arrows.push(Arrow3::from_to_clr(tail, head, clr));
         }
-        // // Scale each vector to have reasonable lengths and to be
-        // // centered around the point whose field they are measuring
-        // for arrow in self.arrows.iter_mut() {
-        //     let len = arrow.len();
-        //     let strength_lvl = len / max_field;
-        //     arrow.clr = [0.0, 0.0, 0.0, 1.0 - 0.9 * (1.0 - strength_lvl.sqrt()) as f32];
-        //     arrow.set_len(FIELD_VEC_MIN_LEN + strength_lvl * FIELD_VEC_LEN_RANGE);
-        //     let c = arrow.tail;
-        //     arrow.center_at(c);
-        // }
     }
 
     fn populate_grid(&mut self) {
@@ -398,263 +370,5 @@ impl FieldView {
         for arrow in self.grid_arrows.iter_mut() {
             arrow.map_transform(&self.arrow_transforms);
         }
-    }
-}
-
-// The following should be in nalgebra, which implements
-// Mul<Point4<N>> for Matrix4<N> but not also for &'a Matrix<N>.
-// The definition mirrors nalgebra's definition of the method
-// `mul` in `impl... for Matrix4<N>`.
-#[inline]
-fn ref_mat4_mul(mat: &na::Matrix4<f64>, right: na::Point4<f64>) -> na::Point4<f64> {
-    let mut res: na::Point4<f64> = na::Point4::new(0.0, 0.0, 0.0, 0.0);
-    for i in 0..4 {
-        for j in 0..4 {
-            unsafe {
-                let val = res.at_fast(i) + mat.at_fast((i, j)) * right.at_fast(j);
-                res.set_fast(i, val);
-            }
-        }
-    }
-    res
-}
-
-fn transform_in_homo(pt: na::Point3<f64>, mat: &na::Matrix4<f64>) -> na::Point3<f64> {
-    <na::Point3<f64> as FromHomogeneous<na::Point4<f64>>>::from(&(ref_mat4_mul(mat, pt.to_homogeneous())))
-}
-
-trait VectorField3 {
-    fn force_at(&self, p: &na::Point3<f64>) -> na::Vector3<f64>;
-    fn potential_at(&self, p: &na::Point3<f64>) -> f64;
-    fn field_data_at(&self, p: &na::Point3<f64>) -> FieldData;
-}
-
-struct FieldData {
-    force_vec: na::Vector3<f64>, // direction and unscaled strength of field
-    force_mag: f64, // cached norm of force_vec, updated manually
-    potential: f64, // potential before scaling relative to field as a whole
-}
-
-impl FieldData {
-    fn new(force_vec: na::Vector3<f64>, mag: f64, pot: f64) -> FieldData {
-        FieldData {
-            force_vec: force_vec,
-            force_mag: mag,
-            potential: pot,
-        }
-    }
-
-    fn update_norm(&mut self) {
-        self.force_mag = self.force_vec.norm();
-    }
-}
-
-impl num::Zero for FieldData {
-    fn zero() -> FieldData { FieldData::new(num::Zero::zero(), 0.0, 0.0) }
-    fn is_zero(&self) -> bool {
-        self.force_vec.is_zero()
-            && self.potential.is_zero()
-    }
-
-}
-
-impl Add<FieldData> for FieldData {
-    type Output = FieldData;
-    fn add(self, right: FieldData) -> FieldData {
-        FieldData::new(
-            self.force_vec + right.force_vec,
-            self.force_mag, // not updated
-            self.potential + right.potential
-        )
-    }
-}
-
-struct PointCharge {
-    charge: f64,
-    loc: na::Point3<f64>,
-}
-
-impl PointCharge {
-    fn new(charge: f64, loc: na::Point3<f64>) -> PointCharge {
-        PointCharge { charge: charge, loc: loc }
-    }
-}
-
-impl Translate<PointCharge> for na::Vector3<f64> {
-    fn translate(&self, chg: &PointCharge) -> PointCharge {
-        PointCharge::new(chg.charge, self.translate(&chg.loc))
-    }
-    fn inverse_translate(&self, chg: &PointCharge) -> PointCharge {
-        PointCharge::new(chg.charge, self.inverse_translate(&chg.loc))
-    }
-}
-
-impl Add<na::Vector3<f64>> for PointCharge {
-    type Output = PointCharge;
-    fn add(self, rhs: na::Vector3<f64>) -> PointCharge {
-        rhs.translate(&self)
-    }
-}
-
-impl<'a> Add<na::Vector3<f64>> for &'a PointCharge {
-    type Output = PointCharge;
-    fn add(self, rhs: na::Vector3<f64>) -> PointCharge {
-        rhs.translate(self)
-    }
-}
-
-impl<'a> Add<&'a na::Vector3<f64>> for PointCharge {
-    type Output = PointCharge;
-    fn add(self, rhs: &na::Vector3<f64>) -> PointCharge {
-        rhs.translate(&self)
-    }
-}
-
-impl<'a, 'b> Add<&'a na::Vector3<f64>> for &'b PointCharge {
-    type Output = PointCharge;
-    fn add(self, rhs: &na::Vector3<f64>) -> PointCharge {
-        rhs.translate(self)
-    }
-}
-
-impl<'a> AddAssign<na::Vector3<f64>> for PointCharge {
-    fn add_assign(&mut self, rhs: na::Vector3<f64>) {
-        self.loc += rhs;
-    }
-}
-
-impl<'a, 'b> AddAssign<&'a na::Vector3<f64>> for PointCharge {
-    fn add_assign(&mut self, rhs: &na::Vector3<f64>) {
-        // nalgebra does not implement AddAssign<&Vector3> for Point3,
-        // thus this is done field by field
-        self.loc.x = self.loc.x + rhs.x;
-        self.loc.y = self.loc.y + rhs.y;
-        self.loc.z = self.loc.z + rhs.z;
-    }
-}
-
-
-const FIELD_SCALE_FACTOR: f64 = 10000.0;
-impl VectorField3 for PointCharge {
-    fn force_at(&self, p: &na::Point3<f64>) -> na::Vector3<f64> {
-        let unit_vec = (p.clone() - self.loc).normalize();
-        let magnitude = self.charge / na::distance_squared(&self.loc, p);
-        FIELD_SCALE_FACTOR * magnitude * unit_vec
-    }
-    fn potential_at(&self, p: &na::Point3<f64>) -> f64 {
-        FIELD_SCALE_FACTOR * self.charge / na::distance(&self.loc, p)
-    }
-    fn field_data_at(&self, p: &na::Point3<f64>) -> FieldData {
-        let unit_vec = (p.clone() - self.loc).normalize();
-        let d_squared = na::distance_squared(&self.loc, p);
-        let force_mag = FIELD_SCALE_FACTOR * self.charge / d_squared;
-        let potential = FIELD_SCALE_FACTOR * self.charge / d_squared.sqrt();
-        FieldData {
-            force_vec: unit_vec * force_mag,
-            force_mag: force_mag,
-            potential: potential,
-        }
-    }
-}
-
-struct Arrow3 {
-    tail: na::Point3<f64>,
-    head: na::Point3<f64>,
-    clr: [f32; 4],
-}
-
-impl Arrow3 {
-    fn from_to_clr(tail: na::Point3<f64>, head: na::Point3<f64>, clr: [f32; 4]) -> Arrow3 {
-        Arrow3 {
-            tail: tail,
-            head: head,
-            clr: clr,
-        }
-    }
-
-    fn from_to(tail: na::Point3<f64>, head: na::Point3<f64>) -> Arrow3 {
-        Arrow3 {
-            tail: tail,
-            head: head,
-            clr: ARROW_CLR,
-        }
-    }
-
-    fn map_transform(&mut self, mat: &na::Matrix4<f64>) {
-        self.tail = transform_in_homo(self.tail, mat);
-        self.head = transform_in_homo(self.head, mat);
-    }
-
-    fn project_to_viewport(&self, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) -> Option<Arrow2> {
-        // Transform relative to the camera position:
-        let headr: na::Point3<f64> = transform_in_homo(self.head, &camera);
-        let tailr: na::Point3<f64> = transform_in_homo(self.tail, &camera);
-        if headr.z <= NEAR_PLANE_Z || tailr.z <= NEAR_PLANE_Z {
-            None
-        } else {
-            // Project onto "device" surface:
-            let head_prime = persp.project_point(&headr);
-            let tail_prime = persp.project_point(&tailr);
-            // Trasform to viewport surface:
-            Some(Arrow2::from_to_clr(
-                na::Point2::new(
-                    tail_prime.x * 150.0 + WIDTHF_2,
-                    tail_prime.y * 150.0 + HEIGHTF_2,
-                ),
-                na::Point2::new(
-                    head_prime.x * 150.0 + WIDTHF_2,
-                    head_prime.y * 150.0 + HEIGHTF_2,
-                ),
-                self.clr,
-            ))
-        }
-    }
-
-    fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) {
-        if let Some(a2d) = self.project_to_viewport(persp, camera) {
-            a2d.draw(c, gl);
-        }
-    }
-
-    fn draw_no_head(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) {
-        if let Some(a2d) = self.project_to_viewport(persp, camera) {
-            a2d.draw_no_head(c, gl);
-        }
-    }
-}
-
-struct Arrow2 {
-    tail: na::Point2<f64>,
-    head: na::Point2<f64>,
-    clr: [f32; 4],
-}
-
-impl Arrow2 {
-    fn from_to_clr(tail: na::Point2<f64>, head: na::Point2<f64>, clr: [f32; 4]) -> Arrow2 {
-        Arrow2 {
-            tail: tail,
-            head: head,
-            clr: clr,
-        }
-    }
-
-    fn from_to(tail: na::Point2<f64>, head: na::Point2<f64>) -> Arrow2 {
-        Arrow2 {
-            tail: tail,
-            head: head,
-            clr: ARROW_CLR,
-        }
-    }
-
-    fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
-        let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
-        let line_style = graphics::Line::new(self.clr, 1.0);
-        line_style.draw_arrow(path, 5.0, &c.draw_state, c.transform, gl);
-    }
-
-    fn draw_no_head(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
-        let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
-        let line_style = graphics::Line::new(self.clr, 1.0);
-        line_style.draw(path, &c.draw_state, c.transform, gl);
     }
 }
