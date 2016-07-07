@@ -30,7 +30,7 @@ fn f64_max(x: f64, y: f64) -> f64 {
 fn main() {
     let opengl: OpenGL = OpenGL::V3_2;
     let mut window: Window = WindowSettings::new(
-            "vectors-starting",
+            "Field Visualizer",
             [WIDTH, HEIGHT]
         )
         .opengl(opengl)

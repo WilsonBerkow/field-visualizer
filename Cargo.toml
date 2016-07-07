@@ -1,11 +1,11 @@
 [package]
 
-name = "vectors-starting"
+name = "field-visualizer"
 version = "0.1.0"
 authors = []
 
 [[bin]]
-name = "vectors-starting"
+name = "field-visualizer"
 
 [dependencies]
 piston = "0.23.0"
