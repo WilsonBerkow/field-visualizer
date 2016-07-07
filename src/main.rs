@@ -585,7 +585,7 @@ impl Arrow3 {
         self.head = transform_in_homo(self.head, mat);
     }
 
-    fn project_to_viewport(&self, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) -> Option<Arrow> {
+    fn project_to_viewport(&self, persp: &na::PerspectiveMatrix3<f64>, camera: na::Matrix4<f64>) -> Option<Arrow2> {
         // Transform relative to the camera position:
         let headr: na::Point3<f64> = transform_in_homo(self.head, &camera);
         let tailr: na::Point3<f64> = transform_in_homo(self.tail, &camera);
@@ -596,7 +596,7 @@ impl Arrow3 {
             let head_prime = persp.project_point(&headr);
             let tail_prime = persp.project_point(&tailr);
             // Trasform to viewport surface:
-            Some(Arrow::from_to_clr(
+            Some(Arrow2::from_to_clr(
                 na::Point2::new(
                     tail_prime.x * 150.0 + WIDTHF_2,
                     tail_prime.y * 150.0 + HEIGHTF_2,
@@ -623,23 +623,23 @@ impl Arrow3 {
     }
 }
 
-struct Arrow {
+struct Arrow2 {
     tail: na::Point2<f64>,
     head: na::Point2<f64>,
     clr: [f32; 4],
 }
 
-impl Arrow {
-    fn from_to_clr(tail: na::Point2<f64>, head: na::Point2<f64>, clr: [f32; 4]) -> Arrow {
-        Arrow {
+impl Arrow2 {
+    fn from_to_clr(tail: na::Point2<f64>, head: na::Point2<f64>, clr: [f32; 4]) -> Arrow2 {
+        Arrow2 {
             tail: tail,
             head: head,
             clr: clr,
         }
     }
 
-    fn from_to(tail: na::Point2<f64>, head: na::Point2<f64>) -> Arrow {
-        Arrow {
+    fn from_to(tail: na::Point2<f64>, head: na::Point2<f64>) -> Arrow2 {
+        Arrow2 {
             tail: tail,
             head: head,
             clr: ARROW_CLR,
