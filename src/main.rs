@@ -66,28 +66,30 @@ fn main() {
 
     let mut app: App = App {
         gl: GlGraphics::new(opengl),
-        arrows: vec![],
-        grid_arrows: vec![],
-        arrow_transforms: num::One::one(),
-        camera: translation3_mat(na::Vector3::new(0.0, -GRID_S_2, 200.0)),
-        persp: na::PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
-        charges: vec![
-            PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
-            PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
-        ],
+        field: FieldView {
+            arrows: vec![],
+            grid_arrows: vec![],
+            arrow_transforms: num::One::one(),
+            camera: translation3_mat(na::Vector3::new(0.0, -GRID_S_2, 200.0)),
+            persp: na::PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
+            charges: vec![
+                PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+                PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+            ],
 
-        // Ranges in x,y,z in which we will draw the field vectors
-        // These are expressed in terms on cubes in the grid, ie.,
-        // in units of GRID_S voxels.
-        x_range: (-4, 6),
-        y_range: (-2, 4),
-        z_range: (-2, 4),
+            // Ranges in x,y,z in which we will draw the field vectors
+            // These are expressed in terms on cubes in the grid, ie.,
+            // in units of GRID_S voxels.
+            x_range: (-4, 6),
+            y_range: (-2, 4),
+            z_range: (-2, 4),
+        },
     };
 
-    app.populate_field();
+    app.field.populate_field();
 
     if SHOW_GRID {
-        app.populate_grid();
+        app.field.populate_grid();
     }
 
     while let Some(e) = events.next(&mut window) {
@@ -113,15 +115,7 @@ fn translation3_mat<T: na::BaseNum>(v: na::Vector3<T>) -> na::Matrix4<T> {
 
 struct App {
     gl: GlGraphics,
-    arrows: Vec<Arrow3>,
-    grid_arrows: Vec<Arrow3>,
-    arrow_transforms: na::Matrix4<f64>, // the product of transforms which have gotten the initial arrows to their current position
-    persp: na::PerspectiveMatrix3<f64>,
-    camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
-    charges: Vec<PointCharge>,
-    x_range: (i64, i64),
-    y_range: (i64, i64),
-    z_range: (i64, i64),
+    field: FieldView,
 }
 
 impl App {
@@ -129,119 +123,156 @@ impl App {
     }
 
     fn render(&mut self, args: &RenderArgs) {
-        graphics::clear(BG_CLR, &mut self.gl);
-        let persp = &self.persp;
-        for arrow in &self.arrows {
-            let cam = self.camera;
-            self.gl.draw(args.viewport(), |c, gl| {
-                arrow.draw(c, gl, persp, cam.clone());
-            });
-        }
-        for arrow in &self.grid_arrows {
-            let cam = self.camera;
-            self.gl.draw(args.viewport(), |c, gl| {
-                arrow.draw_no_head(c, gl, persp, cam.clone());
-            });
-        }
+        self.field.render(&mut self.gl, args);
     }
 
     fn keypress(&mut self, key: Key) {
         match key {
             Key::Up => {
+                // TODO: Define a mutating leftMultiply for Matrix4
                 let rotmat = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
-                self.camera = rotmat.submatrix().to_homogeneous() * self.camera;
+                self.field.camera = rotmat.submatrix().to_homogeneous() * self.field.camera;
             },
             Key::Down => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
-                self.camera = rotmat.submatrix().to_homogeneous() * self.camera;
+                self.field.camera = rotmat.submatrix().to_homogeneous() * self.field.camera;
             },
             Key::Right => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
-                self.camera = rotmat.submatrix().to_homogeneous() * self.camera;
+                self.field.camera = rotmat.submatrix().to_homogeneous() * self.field.camera;
             },
             Key::Left => {
                 let rotmat = na::Rotation3::new(na::Vector3::new(0.0, PI * 0.01, 0.0));
-                self.camera = rotmat.submatrix().to_homogeneous() * self.camera;
+                self.field.camera = rotmat.submatrix().to_homogeneous() * self.field.camera;
             },
             Key::W => {
                 let transmat = translation3_mat(na::Vector3::new(0.0, 0.0, -1.0));
-                self.camera = transmat * self.camera;
+                self.field.camera = transmat * self.field.camera;
             },
             Key::S => {
                 let transmat = translation3_mat(na::Vector3::new(0.0, 0.0, 1.0));
-                self.camera = transmat * self.camera;
+                self.field.camera = transmat * self.field.camera;
             },
             Key::D => {
                 let transmat = translation3_mat(na::Vector3::new(-1.0, 0.0, 0.0));
-                self.camera = transmat * self.camera;
+                self.field.camera = transmat * self.field.camera;
             },
             Key::A => {
                 let transmat = translation3_mat(na::Vector3::new(1.0, 0.0, 0.0));
-                self.camera = transmat * self.camera;
+                self.field.camera = transmat * self.field.camera;
             },
             Key::Q => {
                 let transmat = translation3_mat(na::Vector3::new(0.0, -1.0, 0.0));
-                self.camera = transmat * self.camera;
+                self.field.camera = transmat * self.field.camera;
             },
             Key::E => {
                 let transmat = translation3_mat(na::Vector3::new(0.0, 1.0, 0.0));
-                self.camera = transmat * self.camera;
+                self.field.camera = transmat * self.field.camera;
             },
             Key::I => {
                 let rot = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
                 let rotmat = rot.submatrix().to_homogeneous();
-                self.arrow_transforms = rotmat * self.arrow_transforms;
-                self.map_transform(&rotmat);
+                self.field.arrow_transforms = rotmat * self.field.arrow_transforms;
+                self.field.map_transform(&rotmat);
             },
             Key::K => {
                 let rot = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
                 let rotmat = rot.submatrix().to_homogeneous();
-                self.arrow_transforms = rotmat * self.arrow_transforms;
-                self.map_transform(&rotmat);
+                self.field.arrow_transforms = rotmat * self.field.arrow_transforms;
+                self.field.map_transform(&rotmat);
             },
             Key::L => {
                 let rot = na::Rotation3::new(na::Vector3::new(0.0, PI * 0.01, 0.0));
                 let rotmat = rot.submatrix().to_homogeneous();
-                self.arrow_transforms = rotmat * self.arrow_transforms;
-                self.map_transform(&rotmat);
+                self.field.arrow_transforms = rotmat * self.field.arrow_transforms;
+                self.field.map_transform(&rotmat);
             },
             Key::J => {
                 let rot = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
                 let rotmat = rot.submatrix().to_homogeneous();
-                self.arrow_transforms = rotmat * self.arrow_transforms;
-                self.map_transform(&rotmat);
+                self.field.arrow_transforms = rotmat * self.field.arrow_transforms;
+                self.field.map_transform(&rotmat);
             },
             Key::T => {
-                self.charges[0].loc.y -= CHARGE_MVMT_STEP;
-                self.populate_field();
-                self.map_arrow_transforms();
+                self.field.charges[0].loc.y -= CHARGE_MVMT_STEP;
+                self.field.populate_field();
+                self.field.map_arrow_transforms();
             },
             Key::G => {
-                self.charges[0].loc.y += CHARGE_MVMT_STEP;
-                self.populate_field();
-                self.map_arrow_transforms();
+                self.field.charges[0].loc.y += CHARGE_MVMT_STEP;
+                self.field.populate_field();
+                self.field.map_arrow_transforms();
             },
             Key::H => {
-                self.charges[0].loc.x += CHARGE_MVMT_STEP;
-                self.populate_field();
-                self.map_arrow_transforms();
+                self.field.charges[0].loc.x += CHARGE_MVMT_STEP;
+                self.field.populate_field();
+                self.field.map_arrow_transforms();
             },
             Key::F => {
-                self.charges[0].loc.x -= CHARGE_MVMT_STEP;
-                self.populate_field();
-                self.map_arrow_transforms();
+                self.field.charges[0].loc.x -= CHARGE_MVMT_STEP;
+                self.field.populate_field();
+                self.field.map_arrow_transforms();
             },
             Key::R => {
-                self.charges[0].loc.z -= CHARGE_MVMT_STEP;
-                self.populate_field();
-                self.map_arrow_transforms();
+                self.field.charges[0].loc.z -= CHARGE_MVMT_STEP;
+                self.field.populate_field();
+                self.field.map_arrow_transforms();
             },
             Key::Y => {
-                self.charges[0].loc.z += CHARGE_MVMT_STEP;
-                self.populate_field();
-                self.map_arrow_transforms();
+                self.field.charges[0].loc.z += CHARGE_MVMT_STEP;
+                self.field.populate_field();
+                self.field.map_arrow_transforms();
             },
             _ => {},
+        }
+    }
+}
+
+struct FieldView {
+    // The PointCharges whose field we are visualizing
+    charges: Vec<PointCharge>,
+
+    // The arrows describing the field strengths
+    arrows: Vec<Arrow3>,
+
+    // (Optionally, see SHOW_GRID) translucent line segments
+    // drawing the grid on which the arrows reside
+    grid_arrows: Vec<Arrow3>,
+
+    // The product of all transformations applied to the arrows
+    // of the FieldView (not to the camera). With this we can move
+    // the location of a charge, rebuild the field, and then reapply
+    // arrow_transforms to put the field where the user expects it
+    arrow_transforms: na::Matrix4<f64>, // the product of transforms which have gotten the initial arrows to their current position
+
+    // The transformation from absolute positions (as in `arrows`) to
+    // positions relative to the camera's position and orientation
+    camera: na::Matrix4<f64>, // camera transform from space to locations relative to camera
+
+    // The bounds of the grid in which we are viewing the field
+    x_range: (i64, i64),
+    y_range: (i64, i64),
+    z_range: (i64, i64),
+
+    // For getting to 2-space
+    persp: na::PerspectiveMatrix3<f64>,
+}
+
+impl FieldView {
+    fn render(&self, gl: &mut GlGraphics, args: &RenderArgs) {
+        graphics::clear(BG_CLR, gl);
+        let persp = &self.persp;
+        for arrow in &self.arrows {
+            let cam = self.camera;
+            gl.draw(args.viewport(), |c, gl| {
+                arrow.draw(c, gl, persp, cam.clone());
+            });
+        }
+        for arrow in &self.grid_arrows {
+            let cam = self.camera;
+            gl.draw(args.viewport(), |c, gl| {
+                arrow.draw_no_head(c, gl, persp, cam.clone());
+            });
         }
     }
 
