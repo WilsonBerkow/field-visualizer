@@ -67,7 +67,7 @@ impl FieldView {
             arrows: vec![],
             grid_arrows: vec![],
             arrow_transforms: One::one(),
-            camera: util::translation3_mat(na::Vector3::new(0.0, -GRID_S_2, camera_dist)),
+            camera: util::translation_mat4(na::Vector3::new(0.0, -GRID_S_2, camera_dist)),
             persp: na::PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
             charges: charges,
 

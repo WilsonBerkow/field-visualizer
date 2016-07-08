@@ -5,7 +5,7 @@ pub fn f64_max(x: f64, y: f64) -> f64 {
     if x > y { x } else { y }
 }
 
-pub fn translation3_mat<T: na::BaseNum>(v: na::Vector3<T>) -> na::Matrix4<T> {
+pub fn translation_mat4<T: na::BaseNum>(v: na::Vector3<T>) -> na::Matrix4<T> {
     let mut res: na::Matrix4<T> = num::One::one();
     res.m14 = v.x;
     res.m24 = v.y;

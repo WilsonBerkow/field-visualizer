@@ -97,27 +97,27 @@ impl App {
                 self.field.camera = rotmat.submatrix().to_homogeneous() * self.field.camera;
             },
             Key::W => {
-                let transmat = util::translation3_mat(na::Vector3::new(0.0, 0.0, -1.0));
+                let transmat = util::translation_mat4(na::Vector3::new(0.0, 0.0, -1.0));
                 self.field.camera = transmat * self.field.camera;
             },
             Key::S => {
-                let transmat = util::translation3_mat(na::Vector3::new(0.0, 0.0, 1.0));
+                let transmat = util::translation_mat4(na::Vector3::new(0.0, 0.0, 1.0));
                 self.field.camera = transmat * self.field.camera;
             },
             Key::D => {
-                let transmat = util::translation3_mat(na::Vector3::new(-1.0, 0.0, 0.0));
+                let transmat = util::translation_mat4(na::Vector3::new(-1.0, 0.0, 0.0));
                 self.field.camera = transmat * self.field.camera;
             },
             Key::A => {
-                let transmat = util::translation3_mat(na::Vector3::new(1.0, 0.0, 0.0));
+                let transmat = util::translation_mat4(na::Vector3::new(1.0, 0.0, 0.0));
                 self.field.camera = transmat * self.field.camera;
             },
             Key::Q => {
-                let transmat = util::translation3_mat(na::Vector3::new(0.0, -1.0, 0.0));
+                let transmat = util::translation_mat4(na::Vector3::new(0.0, -1.0, 0.0));
                 self.field.camera = transmat * self.field.camera;
             },
             Key::E => {
-                let transmat = util::translation3_mat(na::Vector3::new(0.0, 1.0, 0.0));
+                let transmat = util::translation_mat4(na::Vector3::new(0.0, 1.0, 0.0));
                 self.field.camera = transmat * self.field.camera;
             },
             Key::I => {
