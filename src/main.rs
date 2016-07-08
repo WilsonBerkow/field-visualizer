@@ -38,7 +38,7 @@ fn main() {
 
     let mut app: App = App {
         gl: GlGraphics::new(opengl),
-        field: FieldView::new(200.0, vec![
+        field: FieldView::new(75.0, vec![
                 field::PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
                 field::PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
             ]),
