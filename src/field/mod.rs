@@ -1,8 +1,7 @@
 use std;
 use num::{ Zero, One };
 
-use na;
-use na::Norm;
+use na::{ Point3, Vector3, Matrix4, PerspectiveMatrix3, Norm };
 
 use piston::input::RenderArgs;
 
@@ -36,11 +35,11 @@ pub struct FieldView {
     // of the FieldView (not to the camera). With this we can move
     // the location of a charge, rebuild the field, and then reapply
     // arrow_transforms to put the field where the user expects it
-    arrow_transforms: na::Matrix4<f64>,
+    arrow_transforms: Matrix4<f64>,
 
     // The transformation from absolute positions (as in `arrows`) to
     // positions relative to the camera's position and orientation
-    pub camera: na::Matrix4<f64>,
+    pub camera: Matrix4<f64>,
 
     // The bounds of the grid in which we are viewing the field
     pub x_range: (i64, i64),
@@ -48,11 +47,11 @@ pub struct FieldView {
     pub z_range: (i64, i64),
 
     // For getting to 2-space
-    persp: na::PerspectiveMatrix3<f64>,
+    persp: PerspectiveMatrix3<f64>,
 }
 
 impl VectorField3 for FieldView {
-    fn field_data_at(&self, p: &na::Point3<f64>) -> FieldData {
+    fn field_data_at(&self, p: &Point3<f64>) -> FieldData {
         let mut field_data: FieldData = self.charges.iter()
             .map(|chg| chg.field_data_at(&p))
             .fold(Zero::zero(), |f0, f1| f0 + f1);
@@ -67,8 +66,8 @@ impl FieldView {
             arrows: vec![],
             grid_arrows: vec![],
             arrow_transforms: One::one(),
-            camera: util::translation_mat4(na::Vector3::new(0.0, -GRID_S_2, camera_dist)),
-            persp: na::PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
+            camera: util::translation_mat4(Vector3::new(0.0, -GRID_S_2, camera_dist)),
+            persp: PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
             charges: charges,
 
             // Ranges in x,y,z in which we will draw the field vectors
@@ -110,13 +109,13 @@ impl FieldView {
         // Same for potential, for color or alpha
         let mut max_abs_potential: f64 = std::f64::NEG_INFINITY;
 
-        let mut field: Vec<(na::Point3<f64>, FieldData)> = vec![];
+        let mut field: Vec<(Point3<f64>, FieldData)> = vec![];
 
         // Get data at all points in field
         for i in lx..rx {
             for j in ly..ry {
                 for k in lz..rz {
-                    let loc = na::Point3::new(
+                    let loc = Point3::new(
                         i as f64 * GRID_S,
                         j as f64 * GRID_S,
                         k as f64 * GRID_S);
@@ -170,22 +169,22 @@ impl FieldView {
             for j in ly..ry {
                 self.grid_arrows.push(
                     Arrow3::from_to_clr(
-                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (lz - 1) as f64 * GRID_S),
-                        na::Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (rz - 1) as f64 * GRID_S),
+                        Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (lz - 1) as f64 * GRID_S),
+                        Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (rz - 1) as f64 * GRID_S),
                         LINES_CLR
                         )
                     );
                 self.grid_arrows.push(
                     Arrow3::from_to_clr(
-                        na::Point3::new((lx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
-                        na::Point3::new((rx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
+                        Point3::new((lx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
+                        Point3::new((rx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
                         LINES_CLR
                         )
                     );
                 self.grid_arrows.push(
                     Arrow3::from_to_clr(
-                        na::Point3::new(i as f64 * GRID_S, (ly - 1) as f64 * GRID_S, j as f64 * GRID_S),
-                        na::Point3::new(i as f64 * GRID_S, (ry - 1) as f64 * GRID_S, j as f64 * GRID_S),
+                        Point3::new(i as f64 * GRID_S, (ly - 1) as f64 * GRID_S, j as f64 * GRID_S),
+                        Point3::new(i as f64 * GRID_S, (ry - 1) as f64 * GRID_S, j as f64 * GRID_S),
                         LINES_CLR
                         )
                     );
@@ -193,7 +192,7 @@ impl FieldView {
         }
     }
 
-    pub fn map_transform(&mut self, t: na::Matrix4<f64>) {
+    pub fn map_transform(&mut self, t: Matrix4<f64>) {
         for arrow in self.arrows.iter_mut() {
             arrow.map_transform(&t);
         }

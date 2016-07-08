@@ -1,21 +1,21 @@
 use na;
-use na::{ ToHomogeneous };
-use num;
+use na::{ Vector3, Rotation3, Point4, Matrix4, ToHomogeneous };
+use num::One;
 
 pub fn f64_max(x: f64, y: f64) -> f64 {
     if x > y { x } else { y }
 }
 
-pub fn translation_mat4<T: na::BaseNum>(v: na::Vector3<T>) -> na::Matrix4<T> {
-    let mut res: na::Matrix4<T> = num::One::one();
+pub fn translation_mat4<T: na::BaseNum>(v: Vector3<T>) -> Matrix4<T> {
+    let mut res: Matrix4<T> = One::one();
     res.m14 = v.x;
     res.m24 = v.y;
     res.m34 = v.z;
     res
 }
 
-pub fn euler_rot_mat4<T: na::BaseFloat>(x: T, y: T, z: T) -> na::Matrix4<T> {
-    let rot = na::Rotation3::new_with_euler_angles(x, y, z);
+pub fn euler_rot_mat4<T: na::BaseFloat>(x: T, y: T, z: T) -> Matrix4<T> {
+    let rot = Rotation3::new_with_euler_angles(x, y, z);
     rot.submatrix().to_homogeneous()
 }
 
@@ -24,8 +24,8 @@ pub fn euler_rot_mat4<T: na::BaseFloat>(x: T, y: T, z: T) -> na::Matrix4<T> {
 // The definition mirrors nalgebra's definition of the method
 // `mul` in `impl... for Matrix4<N>`.
 #[inline]
-pub fn ref_mat4_mul(mat: &na::Matrix4<f64>, right: na::Point4<f64>) -> na::Point4<f64> {
-    let mut res: na::Point4<f64> = na::Point4::new(0.0, 0.0, 0.0, 0.0);
+pub fn ref_mat4_mul(mat: &Matrix4<f64>, right: Point4<f64>) -> Point4<f64> {
+    let mut res: Point4<f64> = Point4::new(0.0, 0.0, 0.0, 0.0);
     for i in 0..4 {
         for j in 0..4 {
             unsafe {
