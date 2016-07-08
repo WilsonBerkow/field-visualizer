@@ -1,5 +1,5 @@
 use na;
-use na::{ Translate, Norm };
+use na::Translate;
 
 use std::ops::Add;
 use std::ops::AddAssign;
@@ -20,10 +20,11 @@ impl PointCharge {
 const FIELD_SCALE_FACTOR: f64 = 10000.0;
 impl VectorField3 for PointCharge {
     fn field_data_at(&self, p: &na::Point3<f64>) -> FieldData {
-        let unit_vec = (p.clone() - self.loc).normalize();
-        let d_squared = na::distance_squared(&self.loc, p);
-        let force_mag = FIELD_SCALE_FACTOR * self.charge / d_squared;
-        let potential = FIELD_SCALE_FACTOR * self.charge / d_squared.sqrt();
+        let dist_squared = na::distance_squared(&self.loc, p);
+        let dist = dist_squared.sqrt();
+        let force_mag = FIELD_SCALE_FACTOR * self.charge / dist_squared;
+        let potential = FIELD_SCALE_FACTOR * self.charge / dist;
+        let unit_vec = (p.clone() - self.loc) / dist;
         FieldData {
             force_vec: unit_vec * force_mag,
             force_mag: force_mag,
