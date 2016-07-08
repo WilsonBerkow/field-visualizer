@@ -218,7 +218,7 @@ struct FieldView {
     // of the FieldView (not to the camera). With this we can move
     // the location of a charge, rebuild the field, and then reapply
     // arrow_transforms to put the field where the user expects it
-    arrow_transforms: na::Matrix4<f64>, // the product of transforms which have gotten the initial arrows to their current position
+    arrow_transforms: na::Matrix4<f64>,
 
     // The transformation from absolute positions (as in `arrows`) to
     // positions relative to the camera's position and orientation
