@@ -6,8 +6,8 @@ extern crate num;
 extern crate nalgebra as na;
 
 use piston::window::WindowSettings;
-use piston::event_loop::*;
-use piston::input::*;
+use piston::event_loop::Events;
+use piston::input::{ RenderEvent, RenderArgs, UpdateEvent, UpdateArgs, PressEvent, Button, Key };
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
 
