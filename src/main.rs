@@ -10,7 +10,6 @@ use piston::event_loop::*;
 use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
-use na::{ ToHomogeneous };
 
 use std::f64::consts::PI;
 
@@ -81,20 +80,16 @@ impl App {
         match key {
             Key::Up => {
                 // TODO: Define a mutating leftMultiply for Matrix4
-                let rotmat = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
-                self.field.camera = rotmat.submatrix().to_homogeneous() * self.field.camera;
+                self.field.camera = util::euler_rot_mat4(PI * 0.01, 0.0, 0.0) * self.field.camera;
             },
             Key::Down => {
-                let rotmat = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
-                self.field.camera = rotmat.submatrix().to_homogeneous() * self.field.camera;
+                self.field.camera = util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0) * self.field.camera;
             },
             Key::Right => {
-                let rotmat = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
-                self.field.camera = rotmat.submatrix().to_homogeneous() * self.field.camera;
+                self.field.camera = util::euler_rot_mat4(0.0, -PI * 0.01, 0.0) * self.field.camera;
             },
             Key::Left => {
-                let rotmat = na::Rotation3::new(na::Vector3::new(0.0, PI * 0.01, 0.0));
-                self.field.camera = rotmat.submatrix().to_homogeneous() * self.field.camera;
+                self.field.camera = util::euler_rot_mat4(0.0, PI * 0.01, 0.0) * self.field.camera;
             },
             Key::W => {
                 let transmat = util::translation_mat4(na::Vector3::new(0.0, 0.0, -1.0));
@@ -121,24 +116,16 @@ impl App {
                 self.field.camera = transmat * self.field.camera;
             },
             Key::I => {
-                let rot = na::Rotation3::new(na::Vector3::new(PI * 0.01, 0.0, 0.0));
-                let rotmat = rot.submatrix().to_homogeneous();
-                self.field.map_transform(rotmat);
+                self.field.map_transform(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
             },
             Key::K => {
-                let rot = na::Rotation3::new(na::Vector3::new(-PI * 0.01, 0.0, 0.0));
-                let rotmat = rot.submatrix().to_homogeneous();
-                self.field.map_transform(rotmat);
+                self.field.map_transform(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
             },
             Key::L => {
-                let rot = na::Rotation3::new(na::Vector3::new(0.0, PI * 0.01, 0.0));
-                let rotmat = rot.submatrix().to_homogeneous();
-                self.field.map_transform(rotmat);
+                self.field.map_transform(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
             },
             Key::J => {
-                let rot = na::Rotation3::new(na::Vector3::new(0.0, -PI * 0.01, 0.0));
-                let rotmat = rot.submatrix().to_homogeneous();
-                self.field.map_transform(rotmat);
+                self.field.map_transform(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
             },
             Key::T => {
                 self.field.charges[0].loc.y -= CHARGE_MVMT_STEP;

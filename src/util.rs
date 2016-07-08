@@ -1,4 +1,5 @@
 use na;
+use na::{ ToHomogeneous };
 use num;
 
 pub fn f64_max(x: f64, y: f64) -> f64 {
@@ -11,6 +12,11 @@ pub fn translation_mat4<T: na::BaseNum>(v: na::Vector3<T>) -> na::Matrix4<T> {
     res.m24 = v.y;
     res.m34 = v.z;
     res
+}
+
+pub fn euler_rot_mat4<T: na::BaseFloat>(x: T, y: T, z: T) -> na::Matrix4<T> {
+    let rot = na::Rotation3::new_with_euler_angles(x, y, z);
+    rot.submatrix().to_homogeneous()
 }
 
 // The following should be in nalgebra, which implements
