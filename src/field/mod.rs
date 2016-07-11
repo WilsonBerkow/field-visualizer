@@ -1,13 +1,9 @@
 use std;
-use num::{ Zero, One };
+use num::{Zero, One};
 
-use na::{ Point3, Vector3, Matrix4, PerspectiveMatrix3, Norm };
+use na::{Point3, Vector3, Matrix4, PerspectiveMatrix3, Norm};
 
-use piston::input::RenderArgs;
-
-use graphics;
-
-use opengl_graphics::GlGraphics;
+use pw::{self, Graphics};
 
 use arrow::Arrow3;
 
@@ -79,20 +75,16 @@ impl FieldView {
         }
     }
 
-    pub fn render(&self, gl: &mut GlGraphics, args: &RenderArgs) {
-        graphics::clear(BG_CLR, gl);
+    pub fn render(&self, args: &pw::RenderArgs, c: pw::Context, gl: &mut pw::G2d) {
+        gl.clear_color(BG_CLR);
         let persp = &self.persp;
         for arrow in &self.arrows {
             let cam = self.camera;
-            gl.draw(args.viewport(), |c, gl| {
-                arrow.draw(c, gl, persp, cam.clone());
-            });
+            arrow.draw(c, gl, persp, cam.clone());
         }
         for arrow in &self.grid_arrows {
             let cam = self.camera;
-            gl.draw(args.viewport(), |c, gl| {
-                arrow.draw_no_head(c, gl, persp, cam.clone());
-            });
+            arrow.draw_no_head(c, gl, persp, cam.clone());
         }
     }
 

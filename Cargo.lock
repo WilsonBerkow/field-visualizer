@@ -4,16 +4,22 @@ version = "0.1.0"
 dependencies = [
  "nalgebra 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.32 (registry+https://github.com/rust-lang/crates.io-index)",
- "piston 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "piston2d-graphics 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "piston2d-opengl_graphics 0.30.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pistoncore-glutin_window 0.27.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston_window 0.50.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "android_glue"
-version = "0.1.3"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "arrayvec"
+version = "0.3.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "nodrop 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "odds 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "bitflags"
@@ -28,6 +34,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "bitflags"
 version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "byteorder"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -109,6 +120,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "draw_state"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "bitflags 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "dwmapi-sys"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -135,31 +154,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fnv"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "freetype-rs"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "bitflags 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "freetype-sys 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "freetype-sys"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "libc 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "libz-sys 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "pkg-config 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "fs2"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -180,6 +174,44 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "winapi 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "gfx"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "draw_state 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "gfx_core"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "draw_state 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "gfx_device_gl"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_gl 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "gfx_gl"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "gl_generator 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -224,10 +256,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "glutin"
-version = "0.5.2"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "android_glue 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "android_glue 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cgl 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "cocoa 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "core-foundation 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -277,6 +309,11 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "itertools"
+version = "0.4.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "jpeg-decoder"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -293,11 +330,6 @@ dependencies = [
  "winapi 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[[package]]
-name = "khronos_api"
-version = "0.0.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "khronos_api"
@@ -330,14 +362,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "libz-sys"
-version = "1.0.4"
+name = "linked-hash-map"
+version = "0.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "gcc 0.3.28 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "pkg-config 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "log"
@@ -385,6 +412,24 @@ dependencies = [
  "num 0.1.32 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "ndarray"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "itertools 0.4.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num 0.1.32 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc_version 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "nodrop"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "odds 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -470,6 +515,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "odds"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "osmesa-sys"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -479,12 +529,12 @@ dependencies = [
 
 [[package]]
 name = "piston"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "pistoncore-event_loop 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pistoncore-input 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pistoncore-window 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-event_loop 0.24.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-input 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-window 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -493,8 +543,19 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "piston-gfx_texture"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "gfx 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "image 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston-texture 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "piston-shaders_graphics2d"
-version = "0.1.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -511,6 +572,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "piston2d-gfx_graphics"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "draw_state 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston-gfx_texture 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston-shaders_graphics2d 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston2d-graphics 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rusttype 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "shader_version 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "piston2d-graphics"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -523,67 +598,62 @@ dependencies = [
 ]
 
 [[package]]
-name = "piston2d-opengl_graphics"
-version = "0.30.0"
+name = "piston_window"
+version = "0.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "fnv 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "freetype-rs 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gl 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "image 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "khronos_api 0.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "piston-shaders_graphics2d 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx_device_gl 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston 0.24.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston-texture 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston2d-gfx_graphics 0.30.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-graphics 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-glutin_window 0.28.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "shader_version 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "pistoncore-event_loop"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "piston-viewport 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pistoncore-input 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pistoncore-window 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-input 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-window 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "pistoncore-glutin_window"
-version = "0.27.0"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "gl 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "glutin 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "pistoncore-input 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pistoncore-window 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glutin 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-input 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-window 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "shader_version 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "pistoncore-input"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "bitflags 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston-viewport 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "pistoncore-window"
-version = "0.20.0"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "pistoncore-input 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-input 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "shader_version 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[[package]]
-name = "pkg-config"
-version = "0.3.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "png"
@@ -634,6 +704,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rusttype"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "arrayvec 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "linked-hash-map 0.0.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ndarray 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "stb_truetype 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "semver"
 version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -664,6 +745,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "winapi 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "stb_truetype"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "byteorder 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

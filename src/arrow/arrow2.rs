@@ -1,5 +1,4 @@
-use graphics;
-use opengl_graphics::GlGraphics;
+use pw;
 
 use na;
 
@@ -28,15 +27,15 @@ impl Arrow2 {
         }
     }
 
-    pub fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
+    pub fn draw(&self, c: pw::Context, gl: &mut pw::G2d) {
         let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
-        let line_style = graphics::Line::new(self.clr, 1.0);
+        let line_style = pw::Line::new(self.clr, 1.0);
         line_style.draw_arrow(path, 5.0, &c.draw_state, c.transform, gl);
     }
 
-    pub fn draw_no_head(&self, c: graphics::context::Context, gl: &mut GlGraphics) {
+    pub fn draw_no_head(&self, c: pw::Context, gl: &mut pw::G2d) {
         let path = [self.tail.x, self.tail.y, self.head.x, self.head.y];
-        let line_style = graphics::Line::new(self.clr, 1.0);
+        let line_style = pw::Line::new(self.clr, 1.0);
         line_style.draw(path, &c.draw_state, c.transform, gl);
     }
 }

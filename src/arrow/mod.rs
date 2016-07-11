@@ -1,7 +1,6 @@
-use graphics;
-use opengl_graphics::GlGraphics;
+use pw;
 
-use na::{ Point2, Point3, Point4, Matrix4, PerspectiveMatrix3, ToHomogeneous, FromHomogeneous };
+use na::{Point2, Point3, Point4, Matrix4, PerspectiveMatrix3, ToHomogeneous, FromHomogeneous};
 
 use util::ref_mat4_mul;
 use consts::*;
@@ -63,13 +62,13 @@ impl Arrow3 {
         }
     }
 
-    pub fn draw(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>) {
+    pub fn draw(&self, c: pw::Context, gl: &mut pw::G2d, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>) {
         if let Some(a2d) = self.project_to_viewport(persp, camera) {
             a2d.draw(c, gl);
         }
     }
 
-    pub fn draw_no_head(&self, c: graphics::context::Context, gl: &mut GlGraphics, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>) {
+    pub fn draw_no_head(&self, c: pw::Context, gl: &mut pw::G2d, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>) {
         if let Some(a2d) = self.project_to_viewport(persp, camera) {
             a2d.draw_no_head(c, gl);
         }

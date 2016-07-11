@@ -1,15 +1,6 @@
-extern crate piston;
-extern crate graphics;
-extern crate glutin_window;
-extern crate opengl_graphics;
+extern crate piston_window as pw;
 extern crate num;
 extern crate nalgebra as na;
-
-use piston::window::WindowSettings;
-use piston::event_loop::Events;
-use piston::input::{ RenderEvent, RenderArgs, UpdateEvent, UpdateArgs, PressEvent, Button, Key };
-use glutin_window::GlutinWindow as Window;
-use opengl_graphics::{ GlGraphics, OpenGL };
 
 use std::f64::consts::PI;
 
@@ -25,8 +16,8 @@ mod field;
 use field::FieldView;
 
 fn main() {
-    let opengl: OpenGL = OpenGL::V3_2;
-    let mut window: Window = WindowSettings::new(
+    let opengl: pw::OpenGL = pw::OpenGL::V3_2;
+    let mut window: pw::PistonWindow = pw::WindowSettings::new(
             "Field Visualizer",
             [WIDTH, HEIGHT]
         )
@@ -34,10 +25,8 @@ fn main() {
         .exit_on_esc(true)
         .build()
         .unwrap();
-    let mut events = window.events();
 
     let mut app: App = App {
-        gl: GlGraphics::new(opengl),
         field: FieldView::new(75.0, vec![
                 field::PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
                 field::PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
@@ -50,109 +39,113 @@ fn main() {
         app.field.populate_grid();
     }
 
-    while let Some(e) = events.next(&mut window) {
-        if let Some(r) = e.render_args() {
-            app.render(&r);
-        }
-        if let Some(u) = e.update_args() {
-            app.update(&u);
-        }
-        if let Some(Button::Keyboard(k)) = e.press_args() {
-            app.keypress(k);
+    while let Some(e) = window.next() {
+        match e {
+            pw::Event::Render(r_args) => {
+                window.draw_2d(&e, |c, g| {
+                    app.render(&r_args, c, g);
+                });
+            },
+            pw::Event::Update(u_args) => {
+                app.update(&u_args);
+            },
+            pw::Event::Input(pw::Input::Press(pw::Button::Keyboard(key))) => {
+                app.keypress(key);
+            },
+            _ => {},
         }
     }
 }
 
 struct App {
-    gl: GlGraphics,
     field: FieldView,
 }
 
 impl App {
-    fn update(&mut self, args: &UpdateArgs) {
+    fn update(&mut self, args: &pw::UpdateArgs) {
     }
 
-    fn render(&mut self, args: &RenderArgs) {
-        self.field.render(&mut self.gl, args);
+    fn render(&mut self, args: &pw::RenderArgs, c: pw::Context, g: &mut pw::G2d) {
+        self.field.render(args, c, g);
     }
 
-    fn keypress(&mut self, key: Key) {
+    fn keypress(&mut self, key: pw::Key) {
         match key {
-            Key::Up => {
+            pw::Key::Up => {
                 // TODO: Define a mutating leftMultiply for Matrix4
                 self.field.camera = util::euler_rot_mat4(PI * 0.01, 0.0, 0.0) * self.field.camera;
             },
-            Key::Down => {
+            pw::Key::Down => {
                 self.field.camera = util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0) * self.field.camera;
             },
-            Key::Right => {
+            pw::Key::Right => {
                 self.field.camera = util::euler_rot_mat4(0.0, -PI * 0.01, 0.0) * self.field.camera;
             },
-            Key::Left => {
+            pw::Key::Left => {
                 self.field.camera = util::euler_rot_mat4(0.0, PI * 0.01, 0.0) * self.field.camera;
             },
-            Key::W => {
+            pw::Key::W => {
                 let transmat = util::translation_mat4(na::Vector3::new(0.0, 0.0, -1.0));
                 self.field.camera = transmat * self.field.camera;
             },
-            Key::S => {
+            pw::Key::S => {
                 let transmat = util::translation_mat4(na::Vector3::new(0.0, 0.0, 1.0));
                 self.field.camera = transmat * self.field.camera;
             },
-            Key::D => {
+            pw::Key::D => {
                 let transmat = util::translation_mat4(na::Vector3::new(-1.0, 0.0, 0.0));
                 self.field.camera = transmat * self.field.camera;
             },
-            Key::A => {
+            pw::Key::A => {
                 let transmat = util::translation_mat4(na::Vector3::new(1.0, 0.0, 0.0));
                 self.field.camera = transmat * self.field.camera;
             },
-            Key::Q => {
+            pw::Key::Q => {
                 let transmat = util::translation_mat4(na::Vector3::new(0.0, -1.0, 0.0));
                 self.field.camera = transmat * self.field.camera;
             },
-            Key::E => {
+            pw::Key::E => {
                 let transmat = util::translation_mat4(na::Vector3::new(0.0, 1.0, 0.0));
                 self.field.camera = transmat * self.field.camera;
             },
-            Key::I => {
+            pw::Key::I => {
                 self.field.map_transform(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
             },
-            Key::K => {
+            pw::Key::K => {
                 self.field.map_transform(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
             },
-            Key::L => {
+            pw::Key::L => {
                 self.field.map_transform(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
             },
-            Key::J => {
+            pw::Key::J => {
                 self.field.map_transform(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
             },
-            Key::T => {
+            pw::Key::T => {
                 self.field.charges[0].loc.y -= CHARGE_MVMT_STEP;
                 self.field.populate_field();
                 self.field.map_arrow_transforms();
             },
-            Key::G => {
+            pw::Key::G => {
                 self.field.charges[0].loc.y += CHARGE_MVMT_STEP;
                 self.field.populate_field();
                 self.field.map_arrow_transforms();
             },
-            Key::H => {
+            pw::Key::H => {
                 self.field.charges[0].loc.x += CHARGE_MVMT_STEP;
                 self.field.populate_field();
                 self.field.map_arrow_transforms();
             },
-            Key::F => {
+            pw::Key::F => {
                 self.field.charges[0].loc.x -= CHARGE_MVMT_STEP;
                 self.field.populate_field();
                 self.field.map_arrow_transforms();
             },
-            Key::R => {
+            pw::Key::R => {
                 self.field.charges[0].loc.z -= CHARGE_MVMT_STEP;
                 self.field.populate_field();
                 self.field.map_arrow_transforms();
             },
-            Key::Y => {
+            pw::Key::Y => {
                 self.field.charges[0].loc.z += CHARGE_MVMT_STEP;
                 self.field.populate_field();
                 self.field.map_arrow_transforms();
