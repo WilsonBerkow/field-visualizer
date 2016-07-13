@@ -8,6 +8,8 @@ authors = []
 name = "field-visualizer"
 
 [dependencies]
+find_folder = "0.3.0"
 piston_window = "0.50.0"
+conrod = "0.37.1"
 num = "0.1.*"
 nalgebra = "0.8.2"

@@ -2,8 +2,14 @@ pub const WIDTH: u32 = 600;
 pub const HEIGHT: u32 = 600;
 pub const WIDTHF: f64 = WIDTH as f64;
 pub const HEIGHTF: f64 = HEIGHT as f64;
-pub const WIDTHF_2: f64 = WIDTHF * 0.5;
-pub const HEIGHTF_2: f64 = HEIGHTF * 0.5;
+
+pub const BANNER_HEIGHT: f64 = 40.0;
+pub const BANNER_FONT_SIZE: u32 = 20;
+
+pub const VIEW_W: f64 = 400.0;
+pub const VIEW_RIGHT: f64 = WIDTHF;
+pub const VIEW_H: f64 = 400.0;
+pub const VIEW_BOTTOM: f64 = HEIGHTF;
 
 pub const GRID_S: f64 = 15.0;
 pub const GRID_S_2: f64 = GRID_S * 0.5;
@@ -11,7 +17,6 @@ pub const GRID_DIAG: f64 = GRID_S * 1.73205080757; // 1.7... is sqrt(3)
 
 pub const CHARGE_MVMT_STEP: f64 = GRID_S;
 
-pub const BG_CLR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 pub const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 pub const LINES_CLR: [f32; 4] = [0.0, 0.0, 0.7, 0.3];
 

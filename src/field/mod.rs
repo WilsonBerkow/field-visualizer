@@ -3,7 +3,7 @@ use num::{Zero, One};
 
 use na::{Point3, Vector3, Matrix4, PerspectiveMatrix3, Norm};
 
-use pw::{self, Graphics};
+use pw;
 
 use arrow::Arrow3;
 
@@ -75,16 +75,16 @@ impl FieldView {
         }
     }
 
-    pub fn render(&self, args: &pw::RenderArgs, c: pw::Context, gl: &mut pw::G2d) {
-        gl.clear_color(BG_CLR);
+    pub fn render(&self, _args: &pw::RenderArgs, c: pw::Context, gl: &mut pw::G2d, view: [f64; 4]) {
+        pw::Rectangle::new(pw::color::WHITE).draw(view, &c.draw_state, c.transform, gl);
         let persp = &self.persp;
         for arrow in &self.arrows {
             let cam = self.camera;
-            arrow.draw(c, gl, persp, cam.clone());
+            arrow.draw(c, gl, persp, cam.clone(), view);
         }
         for arrow in &self.grid_arrows {
             let cam = self.camera;
-            arrow.draw_no_head(c, gl, persp, cam.clone());
+            arrow.draw_no_head(c, gl, persp, cam.clone(), view);
         }
     }
 

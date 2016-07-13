@@ -2,7 +2,7 @@ use pw;
 
 use na::{Point2, Point3, Point4, Matrix4, PerspectiveMatrix3, ToHomogeneous, FromHomogeneous};
 
-use util::ref_mat4_mul;
+use util::{f64_min, ref_mat4_mul};
 use consts::*;
 
 mod arrow2;
@@ -37,7 +37,7 @@ impl Arrow3 {
         self.head = transform_in_homo(self.head, mat);
     }
 
-    pub fn project_to_viewport(&self, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>) -> Option<Arrow2> {
+    pub fn project_to_viewport(&self, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>, view: [f64; 4]) -> Option<Arrow2> {
         // Transform relative to the camera position:
         let headr: Point3<f64> = transform_in_homo(self.head, &camera);
         let tailr: Point3<f64> = transform_in_homo(self.tail, &camera);
@@ -48,28 +48,31 @@ impl Arrow3 {
             let head_prime = persp.project_point(&headr);
             let tail_prime = persp.project_point(&tailr);
             // Trasform to viewport surface:
+            let scale_factor = 0.25 * f64_min(view[2], view[3]);
+            let cx = view[0] + view[2] * 0.5;
+            let cy = view[1] + view[3] * 0.5;
             Some(Arrow2::from_to_clr(
                 Point2::new(
-                    tail_prime.x * 150.0 + WIDTHF_2,
-                    tail_prime.y * 150.0 + HEIGHTF_2,
+                    tail_prime.x * scale_factor + cx,
+                    tail_prime.y * scale_factor + cy,
                 ),
                 Point2::new(
-                    head_prime.x * 150.0 + WIDTHF_2,
-                    head_prime.y * 150.0 + HEIGHTF_2,
+                    head_prime.x * scale_factor + cx,
+                    head_prime.y * scale_factor + cy,
                 ),
                 self.clr,
             ))
         }
     }
 
-    pub fn draw(&self, c: pw::Context, gl: &mut pw::G2d, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>) {
-        if let Some(a2d) = self.project_to_viewport(persp, camera) {
+    pub fn draw(&self, c: pw::Context, gl: &mut pw::G2d, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>, view: [f64; 4]) {
+        if let Some(a2d) = self.project_to_viewport(persp, camera, view) {
             a2d.draw(c, gl);
         }
     }
 
-    pub fn draw_no_head(&self, c: pw::Context, gl: &mut pw::G2d, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>) {
-        if let Some(a2d) = self.project_to_viewport(persp, camera) {
+    pub fn draw_no_head(&self, c: pw::Context, gl: &mut pw::G2d, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>, view: [f64; 4]) {
+        if let Some(a2d) = self.project_to_viewport(persp, camera, view) {
             a2d.draw_no_head(c, gl);
         }
     }

@@ -2,6 +2,10 @@ use na;
 use na::{ Vector3, Rotation3, Point4, Matrix4, ToHomogeneous };
 use num::One;
 
+pub fn f64_min(x: f64, y: f64) -> f64 {
+    if x < y { x } else { y }
+}
+
 pub fn f64_max(x: f64, y: f64) -> f64 {
     if x > y { x } else { y }
 }
