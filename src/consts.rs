@@ -6,6 +6,9 @@ pub const HEIGHTF: f64 = HEIGHT as f64;
 pub const BANNER_HEIGHT: f64 = 40.0;
 pub const BANNER_FONT_SIZE: u32 = 20;
 
+pub const CHROME_MIN_WIDTH: u32 = 300;
+pub const CHROME_SLIDER_HEIGHT: u32 = 15;
+
 pub const VIEW_W: f64 = 400.0;
 pub const VIEW_RIGHT: f64 = WIDTHF;
 pub const VIEW_H: f64 = 400.0;
