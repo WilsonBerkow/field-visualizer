@@ -23,10 +23,6 @@ pub struct FieldView {
     // The arrows describing the field strengths
     arrows: Vec<Arrow3>,
 
-    // (Optionally, see SHOW_GRID) translucent line segments
-    // drawing the grid on which the arrows reside
-    grid_arrows: Vec<Arrow3>,
-
     // The product of all transformations applied to the arrows
     // of the FieldView (not to the camera). With this we can move
     // the location of a charge, rebuild the field, and then reapply
@@ -60,7 +56,6 @@ impl FieldView {
     pub fn new(camera_dist: f64, charges: Vec<PointCharge>) -> FieldView {
         FieldView {
             arrows: vec![],
-            grid_arrows: vec![],
             arrow_transforms: One::one(),
             camera: util::translation_mat4(Vector3::new(0.0, -GRID_S_2, camera_dist)),
             persp: PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
@@ -81,10 +76,6 @@ impl FieldView {
         for arrow in &self.arrows {
             let cam = self.camera;
             arrow.draw(c, gl, persp, cam.clone(), view);
-        }
-        for arrow in &self.grid_arrows {
-            let cam = self.camera;
-            arrow.draw_no_head(c, gl, persp, cam.clone(), view);
         }
     }
 
@@ -153,42 +144,8 @@ impl FieldView {
         }
     }
 
-    pub fn populate_grid(&mut self) {
-        let (lx, rx) = self.x_range;
-        let (ly, ry) = self.y_range;
-        let (lz, rz) = self.z_range;
-        for i in lx..rx {
-            for j in ly..ry {
-                self.grid_arrows.push(
-                    Arrow3::from_to_clr(
-                        Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (lz - 1) as f64 * GRID_S),
-                        Point3::new(i as f64 * GRID_S, j as f64 * GRID_S, (rz - 1) as f64 * GRID_S),
-                        LINES_CLR
-                        )
-                    );
-                self.grid_arrows.push(
-                    Arrow3::from_to_clr(
-                        Point3::new((lx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
-                        Point3::new((rx - 1) as f64 * GRID_S, i as f64 * GRID_S, j as f64 * GRID_S),
-                        LINES_CLR
-                        )
-                    );
-                self.grid_arrows.push(
-                    Arrow3::from_to_clr(
-                        Point3::new(i as f64 * GRID_S, (ly - 1) as f64 * GRID_S, j as f64 * GRID_S),
-                        Point3::new(i as f64 * GRID_S, (ry - 1) as f64 * GRID_S, j as f64 * GRID_S),
-                        LINES_CLR
-                        )
-                    );
-            }
-        }
-    }
-
     pub fn map_transform(&mut self, t: Matrix4<f64>) {
         for arrow in self.arrows.iter_mut() {
-            arrow.map_transform(&t);
-        }
-        for arrow in self.grid_arrows.iter_mut() {
             arrow.map_transform(&t);
         }
         // Record t in arrow_transforms
@@ -197,9 +154,6 @@ impl FieldView {
 
     pub fn map_arrow_transforms(&mut self) {
         for arrow in self.arrows.iter_mut() {
-            arrow.map_transform(&self.arrow_transforms);
-        }
-        for arrow in self.grid_arrows.iter_mut() {
             arrow.map_transform(&self.arrow_transforms);
         }
     }

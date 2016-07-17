@@ -59,10 +59,6 @@ fn main() {
 
     app.field.populate_field();
 
-    if SHOW_GRID {
-        app.field.populate_grid();
-    }
-
     while let Some(event) = window.next() {
         app.ui.handle_event(event.clone());
         match event {
