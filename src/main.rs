@@ -225,7 +225,7 @@ impl App {
         self.ui.set_widgets(|ref mut ui: UiCell| {
             use conrod::{color, Widget, Canvas, Text, Slider, Sizeable, Colorable, Positionable, Frameable};
             Canvas::new().flow_down(&[
-                    (HEADER, Canvas::new().length(BANNER_HEIGHT).color(color::CHARCOAL)),
+                    (HEADER, Canvas::new().length(BANNER_HEIGHT).color(color::CHARCOAL).frame(0.0)),
                     (CONTENT, Canvas::new().length(h - BANNER_HEIGHT).flow_right(&[
                         (BODY_LEFT, Canvas::new().color(color::DARK_CHARCOAL).length(CHROME_PAD as f64).frame(0.0)),
                         (BODY, Canvas::new().color(color::DARK_CHARCOAL).length(view[0] - CHROME_PAD as f64).pad_top(CHROME_PAD as f64).frame(0.0)),
