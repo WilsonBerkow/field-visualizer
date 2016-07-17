@@ -66,13 +66,13 @@ fn main() {
     while let Some(event) = window.next() {
         app.ui.handle_event(event.clone());
         match event {
-            pw::Event::Render(r_args) => {
+            pw::Event::Render(_args) => {
                 window.draw_2d(&event, |context, graphics| {
-                    app.render(&r_args, context, graphics);
+                    app.render(context, graphics);
                 });
             },
-            pw::Event::Update(u_args) => {
-                app.update(&u_args);
+            pw::Event::Update(_args) => {
+                app.update();
             },
             pw::Event::Input(pw::Input::Press(pw::Button::Keyboard(key))) => {
                 app.keypress(key);
@@ -93,7 +93,7 @@ struct App {
 }
 
 impl App {
-    fn update(&mut self, _args: &pw::UpdateArgs) {
+    fn update(&mut self) {
         self.set_widgets();
     }
 
@@ -105,12 +105,12 @@ impl App {
         }
     }
 
-    fn render(&mut self, args: &pw::RenderArgs, c: pw::Context, g: &mut pw::G2d) {
+    fn render(&mut self, c: pw::Context, g: &mut pw::G2d) {
         self.update_view(c);
         self.ui.draw_if_changed(c, g);
         let mut context = c.clone();
         context.draw_state.scissor = Some(self.get_view_scissor());
-        self.field.render(args, context, g, self.view);
+        self.field.render(context, g, self.view);
     }
 
     fn update_view(&mut self, c: pw::Context) {

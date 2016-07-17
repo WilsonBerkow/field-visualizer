@@ -75,7 +75,7 @@ impl FieldView {
         }
     }
 
-    pub fn render(&self, _args: &pw::RenderArgs, c: pw::Context, gl: &mut pw::G2d, view: [f64; 4]) {
+    pub fn render(&self, c: pw::Context, gl: &mut pw::G2d, view: [f64; 4]) {
         pw::Rectangle::new(pw::color::WHITE).draw(view, &c.draw_state, c.transform, gl);
         let persp = &self.persp;
         for arrow in &self.arrows {
