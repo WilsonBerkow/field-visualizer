@@ -64,12 +64,13 @@ macro_rules! slider {
             c.w($view[0]).set($self_id, $ui);
         }
         Text::new(&label)
+            .color(color::WHITE)
             .align_text_right()
             .top_right_of($text_canv)
-            .padded_w_of($text_canv, 3.0)
+            .padded_w_of($text_canv, 7.0)
             .set($text_id, $ui);
         Slider::new(value, $leftbound, $rightbound)
-            .middle_of($slider_canv)
+            .mid_bottom_of($slider_canv)
             .padded_w_of($slider_canv, 10.0)
             .h(CHROME_SLIDER_HEIGHT as f64)
             .react($react)
