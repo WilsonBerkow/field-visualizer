@@ -11,7 +11,7 @@ use std::f64::consts::PI;
 mod arrow;
 pub use arrow::Arrow3;
 
-mod util;
+#[macro_use] mod util;
 
 mod consts;
 use consts::*;
@@ -218,7 +218,7 @@ impl App {
     }
 
     fn set_widgets(&mut self) {
-        let (w, h) = (self.window[0] as f64, self.window[1] as f64);
+        let h = self.window[1] as f64;
         let field = &mut self.field;
         let view = self.view;
         let mut queue_rebuild = false;
@@ -237,51 +237,37 @@ impl App {
                 .mid_left_with_margin_on(HEADER, 5.0)
                 .set(TITLE, ui);
             // Label and slider for right charge value
-            {
-                let value = field.charges[0].charge;
-                let label = format!("Right charge: {:.*}", 1, value);
-                Canvas::new().flow_right(&[
-                    (SLIDER1_LC, Canvas::new().color(color::DARK_CHARCOAL).length_weight(1.3).frame(0.0)),
-                    (SLIDER1_SC, Canvas::new().color(color::DARK_CHARCOAL).frame(0.0)),
-                ]).mid_top_of(BODY).w(view[0]).set(SLIDER1, ui);
-                Text::new(&label)
-                    .align_text_right()
-                    .top_right_of(SLIDER1_LC)
-                    .padded_w_of(SLIDER1_LC, 3.0)
-                    .set(SLIDER1_L, ui);
-                Slider::new(value, 0.0, 10.0)
-                    .middle_of(SLIDER1_SC)
-                    .padded_w_of(SLIDER1_SC, 10.0)
-                    .h(CHROME_SLIDER_HEIGHT as f64)
-                    .react(|c: f64| {
-                            field.charges[0].charge = c;
-                            queue_rebuild = true;
-                        })
-                    .set(SLIDER1_S, ui);
-            }
+            let value0 = field.charges[0].charge;
+            slider!(
+                ids[SLIDER0, SLIDER0_LC, SLIDER0_SC, SLIDER0_L, SLIDER0_S],
+                above = BODY,
+                top = true,
+                view = view,
+                ui = ui,
+                value = value0,
+                range = [0.0, 10.0],
+                text = "Right charge: ",
+                react = |c: f64| {
+                    field.charges[0].charge = c;
+                    queue_rebuild = true;
+                }
+            );
             // Label and slider for left charge value
-            {
-                let value = field.charges[1].charge;
-                let label = format!("Left charge: {:.*}", 1, value);
-                Canvas::new().flow_right(&[
-                    (SLIDER2_LC, Canvas::new().color(color::DARK_CHARCOAL).length_weight(1.3).frame(0.0)),
-                    (SLIDER2_SC, Canvas::new().color(color::DARK_CHARCOAL).frame(0.0)),
-                ]).down_from(SLIDER1_LC, 5.0).w(view[0]).set(SLIDER2, ui);
-                Text::new(&label)
-                    .align_text_right()
-                    .top_right_of(SLIDER2_LC)
-                    .padded_w_of(SLIDER2_LC, 3.0)
-                    .set(SLIDER2_L, ui);
-                Slider::new(value, 0.0, -10.0)
-                    .middle_of(SLIDER2_SC)
-                    .padded_w_of(SLIDER2_SC, 10.0)
-                    .h(CHROME_SLIDER_HEIGHT as f64)
-                    .react(|c: f64| {
-                            field.charges[1].charge = c;
-                            queue_rebuild = true;
-                        })
-                    .set(SLIDER2_S, ui);
-            }
+            let value1 = field.charges[1].charge;
+            slider!(
+                ids[SLIDER1, SLIDER1_LC, SLIDER1_SC, SLIDER1_L, SLIDER1_S],
+                above = SLIDER0,
+                top = false,
+                view = view,
+                ui = ui,
+                value = value1,
+                range = [0.0, -10.0],
+                text = "Left charge: ",
+                react = |c: f64| {
+                    field.charges[1].charge = c;
+                    queue_rebuild = true;
+                }
+            );
         });
         if queue_rebuild {
             self.rebuild_queued = true;
@@ -296,14 +282,14 @@ widget_ids! {
     CONTENT,
     BODY,
     BODY_RIGHT,
+    SLIDER0,
+    SLIDER0_LC,
+    SLIDER0_SC,
+    SLIDER0_L,
+    SLIDER0_S,
     SLIDER1,
     SLIDER1_LC,
     SLIDER1_SC,
     SLIDER1_L,
     SLIDER1_S,
-    SLIDER2,
-    SLIDER2_LC,
-    SLIDER2_SC,
-    SLIDER2_L,
-    SLIDER2_S,
 }

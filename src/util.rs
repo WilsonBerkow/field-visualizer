@@ -40,3 +40,39 @@ pub fn ref_mat4_mul(mat: &Matrix4<f64>, right: Point4<f64>) -> Point4<f64> {
     }
     res
 }
+
+macro_rules! slider {
+    (
+        ids [ $self_id:ident, $text_canv:ident, $slider_canv:ident, $text_id:ident, $slider_id:ident ],
+        above = $above:expr,
+        top = $top:expr,
+        view = $view:ident, ui = $ui:ident,
+        value = $value:expr,
+        range = [ $leftbound:expr, $rightbound:expr ],
+        text = $text_prefix:expr,
+        react = $react:expr
+    ) => ({
+        let value = $value;
+        let label = format!("{}{:.*}", $text_prefix, 1, value);
+        {
+            let items = [
+                ($text_canv, Canvas::new().color(color::DARK_CHARCOAL).length_weight(1.3).frame(0.0)),
+                ($slider_canv, Canvas::new().color(color::DARK_CHARCOAL).frame(0.0)),
+            ];
+            let mut c = Canvas::new().flow_right(&items);
+            c = if $top { c.mid_top_of($above) } else { c.down_from($above, 5.0) };
+            c.w($view[0]).set($self_id, $ui);
+        }
+        Text::new(&label)
+            .align_text_right()
+            .top_right_of($text_canv)
+            .padded_w_of($text_canv, 3.0)
+            .set($text_id, $ui);
+        Slider::new(value, $leftbound, $rightbound)
+            .middle_of($slider_canv)
+            .padded_w_of($slider_canv, 10.0)
+            .h(CHROME_SLIDER_HEIGHT as f64)
+            .react($react)
+            .set($slider_id, $ui);
+    });
+}
