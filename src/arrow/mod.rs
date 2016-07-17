@@ -48,9 +48,9 @@ impl Arrow3 {
             let head_prime = persp.project_point(&headr);
             let tail_prime = persp.project_point(&tailr);
             // Trasform to viewport surface:
-            let scale_factor = 0.25 * f64_min(view[2], view[3]);
+            let scale_factor = 0.3 * f64_min(view[2], view[3]);
             let cx = view[0] + view[2] * 0.5;
-            let cy = view[1] + view[3] * 0.5;
+            let cy = view[1] + view[3] * 0.5 + 15.0;
             Some(Arrow2::from_to_clr(
                 Point2::new(
                     tail_prime.x * scale_factor + cx,

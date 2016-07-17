@@ -227,8 +227,9 @@ impl App {
             Canvas::new().flow_down(&[
                     (HEADER, Canvas::new().length(BANNER_HEIGHT).color(color::CHARCOAL)),
                     (CONTENT, Canvas::new().length(h - BANNER_HEIGHT).flow_right(&[
-                        (BODY, Canvas::new().color(color::DARK_CHARCOAL).length(view[0])),
-                        (BODY_RIGHT, Canvas::new().length(view[2]))
+                        (BODY_LEFT, Canvas::new().color(color::DARK_CHARCOAL).length(CHROME_PAD as f64).frame(0.0)),
+                        (BODY, Canvas::new().color(color::DARK_CHARCOAL).length(view[0] - CHROME_PAD as f64).pad_top(CHROME_PAD as f64).frame(0.0)),
+                        (BODY_RIGHT, Canvas::new().length(view[2]).frame(0.0))
                     ]))
                 ]).top_left().set(CANVAS, ui);
             Text::new("Fancy Fields")
@@ -236,31 +237,20 @@ impl App {
                 .font_size(BANNER_FONT_SIZE)
                 .mid_left_with_margin_on(HEADER, 5.0)
                 .set(TITLE, ui);
-            // Label and slider for right charge value
-            let value0 = field.charges[0].charge;
+            description_top("Controls:
+  - WASDEQ to move the camera
+  - arrow keys to look around
+  - IJKL to rotate field").set(INSTRUCTIONS, ui);
+            description("Set magnitudes of charges:", INSTRUCTIONS).set(SLIDER_INTRO, ui);
+            // Label and slider for left charge value
+            let value0 = field.charges[1].charge;
             slider!(
                 ids[SLIDER0, SLIDER0_LC, SLIDER0_SC, SLIDER0_L, SLIDER0_S],
-                above = BODY,
-                top = true,
-                view = view,
-                ui = ui,
-                value = value0,
-                range = [0.0, 10.0],
-                text = "Right charge: ",
-                react = |c: f64| {
-                    field.charges[0].charge = c;
-                    queue_rebuild = true;
-                }
-            );
-            // Label and slider for left charge value
-            let value1 = field.charges[1].charge;
-            slider!(
-                ids[SLIDER1, SLIDER1_LC, SLIDER1_SC, SLIDER1_L, SLIDER1_S],
-                above = SLIDER0,
+                above = SLIDER_INTRO,
                 top = false,
                 view = view,
                 ui = ui,
-                value = value1,
+                value = value0,
                 range = [0.0, -10.0],
                 text = "Left charge: ",
                 react = |c: f64| {
@@ -268,6 +258,23 @@ impl App {
                     queue_rebuild = true;
                 }
             );
+            // Label and slider for right charge value
+            let value1 = field.charges[0].charge;
+            slider!(
+                ids[SLIDER1, SLIDER1_LC, SLIDER1_SC, SLIDER1_L, SLIDER1_S],
+                above = SLIDER0,
+                top = false,
+                view = view,
+                ui = ui,
+                value = value1,
+                range = [0.0, 10.0],
+                text = "Right charge: ",
+                react = |c: f64| {
+                    field.charges[0].charge = c;
+                    queue_rebuild = true;
+                }
+            );
+            //Text::new(" 
         });
         if queue_rebuild {
             self.rebuild_queued = true;
@@ -275,13 +282,32 @@ impl App {
     }
 }
 
+fn description_top(t: &str) -> conrod::Text {
+    use conrod::{color, Text, Colorable, Sizeable, Positionable};
+    Text::new(t)
+        .color(color::WHITE)
+        .w_of(BODY)
+        .mid_top_of(BODY)
+}
+
+fn description(t: &str, above: conrod::WidgetId) -> conrod::Text {
+    use conrod::{color, Text, Colorable, Sizeable, Positionable};
+    Text::new(t)
+        .color(color::WHITE)
+        .w_of(BODY)
+        .down_from(above, 10.0)
+}
+
 widget_ids! {
     CANVAS,
     HEADER,
     TITLE,
     CONTENT,
+    BODY_LEFT,
     BODY,
     BODY_RIGHT,
+    INSTRUCTIONS,
+    SLIDER_INTRO,
     SLIDER0,
     SLIDER0_LC,
     SLIDER0_SC,
