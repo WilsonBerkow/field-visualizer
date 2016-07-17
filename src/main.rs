@@ -96,7 +96,7 @@ impl App {
     fn idle(&mut self) {
         if self.rebuild_queued {
             self.field.populate_field();
-            self.field.map_arrow_transforms();
+            self.field.reapply_arrow_transforms();
             self.rebuild_queued = false;
         }
     }
@@ -137,53 +137,46 @@ impl App {
     fn keypress(&mut self, key: pw::Key) {
         match key {
             pw::Key::Up => {
-                // TODO: Define a mutating leftMultiply for Matrix4
-                self.field.camera = util::euler_rot_mat4(PI * 0.01, 0.0, 0.0) * self.field.camera;
+                self.field.transform_camera(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
             },
             pw::Key::Down => {
-                self.field.camera = util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0) * self.field.camera;
+                self.field.transform_camera(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
             },
             pw::Key::Right => {
-                self.field.camera = util::euler_rot_mat4(0.0, -PI * 0.01, 0.0) * self.field.camera;
+                self.field.transform_camera(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
             },
             pw::Key::Left => {
-                self.field.camera = util::euler_rot_mat4(0.0, PI * 0.01, 0.0) * self.field.camera;
+                self.field.transform_camera(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
             },
             pw::Key::W => {
-                let transmat = util::translation_mat4(na::Vector3::new(0.0, 0.0, -1.0));
-                self.field.camera = transmat * self.field.camera;
+                self.field.transform_camera(util::translation_mat4(na::Vector3::new(0.0, 0.0, -1.0)));
             },
             pw::Key::S => {
-                let transmat = util::translation_mat4(na::Vector3::new(0.0, 0.0, 1.0));
-                self.field.camera = transmat * self.field.camera;
+                self.field.transform_camera(util::translation_mat4(na::Vector3::new(0.0, 0.0, 1.0)));
             },
             pw::Key::D => {
-                let transmat = util::translation_mat4(na::Vector3::new(-1.0, 0.0, 0.0));
-                self.field.camera = transmat * self.field.camera;
+                self.field.transform_camera(util::translation_mat4(na::Vector3::new(-1.0, 0.0, 0.0)));
             },
             pw::Key::A => {
-                let transmat = util::translation_mat4(na::Vector3::new(1.0, 0.0, 0.0));
-                self.field.camera = transmat * self.field.camera;
+                self.field.transform_camera(util::translation_mat4(na::Vector3::new(1.0, 0.0, 0.0)));
             },
             pw::Key::Q => {
-                let transmat = util::translation_mat4(na::Vector3::new(0.0, -1.0, 0.0));
-                self.field.camera = transmat * self.field.camera;
+                self.field.transform_camera(util::translation_mat4(na::Vector3::new(0.0, -1.0, 0.0)));
             },
             pw::Key::E => {
-                let transmat = util::translation_mat4(na::Vector3::new(0.0, 1.0, 0.0));
-                self.field.camera = transmat * self.field.camera;
+                self.field.transform_camera(util::translation_mat4(na::Vector3::new(0.0, 1.0, 0.0)));
             },
             pw::Key::I => {
-                self.field.map_transform(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
+                self.field.transform_arrows(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
             },
             pw::Key::K => {
-                self.field.map_transform(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
+                self.field.transform_arrows(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
             },
             pw::Key::L => {
-                self.field.map_transform(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
+                self.field.transform_arrows(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
             },
             pw::Key::J => {
-                self.field.map_transform(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
+                self.field.transform_arrows(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
             },
             pw::Key::T => {
                 self.field.charges[0].loc.y -= CHARGE_MVMT_STEP;

@@ -31,12 +31,12 @@ pub struct FieldView {
 
     // The transformation from absolute positions (as in `arrows`) to
     // positions relative to the camera's position and orientation
-    pub camera: Matrix4<f64>,
+    camera: Matrix4<f64>,
 
     // The bounds of the grid in which we are viewing the field
-    pub x_range: (i64, i64),
-    pub y_range: (i64, i64),
-    pub z_range: (i64, i64),
+    x_range: (i64, i64),
+    y_range: (i64, i64),
+    z_range: (i64, i64),
 
     // For getting to 2-space
     persp: PerspectiveMatrix3<f64>,
@@ -144,7 +144,7 @@ impl FieldView {
         }
     }
 
-    pub fn map_transform(&mut self, t: Matrix4<f64>) {
+    pub fn transform_arrows(&mut self, t: Matrix4<f64>) {
         for arrow in self.arrows.iter_mut() {
             arrow.map_transform(&t);
         }
@@ -152,9 +152,13 @@ impl FieldView {
         self.arrow_transforms = t * self.arrow_transforms;
     }
 
-    pub fn map_arrow_transforms(&mut self) {
+    pub fn reapply_arrow_transforms(&mut self) {
         for arrow in self.arrows.iter_mut() {
             arrow.map_transform(&self.arrow_transforms);
         }
+    }
+
+    pub fn transform_camera(&mut self, t: Matrix4<f64>) {
+        self.camera = t * self.camera;
     }
 }
