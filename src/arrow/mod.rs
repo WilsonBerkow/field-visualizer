@@ -50,7 +50,7 @@ impl Arrow3 {
             // Trasform to viewport surface:
             let scale_factor = 0.3 * f64_min(view[2], view[3]);
             let cx = view[0] + view[2] * 0.5;
-            let cy = view[1] + view[3] * 0.5 + 15.0;
+            let cy = view[1] + view[3] * 0.5 + GRID_S;
             Some(Arrow2::from_to_clr(
                 Point2::new(
                     tail_prime.x * scale_factor + cx,
