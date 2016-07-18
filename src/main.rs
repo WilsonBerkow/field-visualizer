@@ -49,16 +49,20 @@ fn main() {
             Ui::new(glyph_cache, theme)
         },
         fields: FieldChoices {
-            one_charge: PointChargesFieldView::new(75.0, vec![
-                PointCharge::new(10.0, na::Point3::new(GRID_S_2, GRID_S_2, GRID_S_2)),
-            ]),
-            two_charges: PointChargesFieldView::new(75.0, vec![
-                PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
-                PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
-            ]),
+            one_charge: PointChargesFieldView::new(
+                na::Vector3::new(-GRID_S_2, 0.0, 75.0),
+                vec![PointCharge::new(10.0, na::Point3::new(GRID_S_2, GRID_S_2, GRID_S_2))]
+            ),
+            two_charges: PointChargesFieldView::new(
+                na::Vector3::new(0.0, 0.0, 75.0),
+                vec![
+                    PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+                    PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+                ]
+            ),
             capacitor: PointChargesFieldView::new_capacitor(75.0),
         },
-        selected: FieldChoice::Capacitor,
+        selected: FieldChoice::TwoCharges,
         view: [VIEW_RIGHT - VIEW_W, VIEW_BOTTOM - VIEW_H, VIEW_W, VIEW_H],
         window: [WIDTH, HEIGHT],
         rebuild_queued: false,
@@ -95,7 +99,7 @@ struct FieldChoices {
     capacitor: PointChargesFieldView,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum FieldChoice {
     OneCharge,
     TwoCharges,
@@ -270,10 +274,10 @@ impl App {
 
     fn set_widgets(&mut self) {
         let h = self.window[1] as f64;
-        let selected = self.selected;
         let fields = &mut self.fields;
         let view = self.view;
         let mut queue_rebuild = false;
+        let mut selected_field = self.selected;
         self.ui.set_widgets(|ref mut ui: UiCell| {
             use conrod::{color, Widget, Canvas, Text, Slider, Sizeable, Colorable, Positionable, Frameable};
             Canvas::new().flow_down(&[
@@ -289,16 +293,35 @@ impl App {
                 .font_size(BANNER_FONT_SIZE)
                 .mid_left_with_margin_on(HEADER, 5.0)
                 .set(TITLE, ui);
+
+            // Instructions
             description_top("Controls:
   - WASDEQ to move the camera
   - arrow keys to look around
   - IJKL to rotate field").set(INSTRUCTIONS, ui);
-            match selected {
+
+            // Buttons for selecting type of field
+            description("Choose field:", INSTRUCTIONS).h(15.0).set(CHOOSE_TEXT, ui);
+            field_btn_top("One charge", CHOOSE_TEXT, selected_field == FieldChoice::OneCharge)
+                .react(|| {
+                    selected_field = FieldChoice::OneCharge;
+                }).set(FIELDBTN_ONE, ui);
+            field_btn("Two charges", FIELDBTN_ONE, selected_field == FieldChoice::TwoCharges)
+                .react(|| {
+                    selected_field = FieldChoice::TwoCharges;
+                }).set(FIELDBTN_TWO, ui);
+            field_btn("Capacitor", FIELDBTN_TWO, selected_field == FieldChoice::Capacitor)
+                .react(|| {
+                    selected_field = FieldChoice::Capacitor;
+                }).set(FIELDBTN_CAP, ui);
+
+            // Controls
+            match selected_field {
                 FieldChoice::OneCharge => {
                 },
                 FieldChoice::TwoCharges => {
                     let field = &mut fields.two_charges;
-                    description("Set magnitudes of charges:", INSTRUCTIONS).set(SLIDER_INTRO, ui);
+                    description("Set magnitudes of charges:", FIELDBTN_TWO).set(SLIDER_INTRO, ui);
                     // Label and slider for left charge value
                     let value0 = field.charges[1].charge;
                     slider!(
@@ -339,6 +362,21 @@ impl App {
         if queue_rebuild {
             self.rebuild_queued = true;
         }
+        self.selected = selected_field;
+    }
+}
+
+fn field_btn_top<F: FnOnce()>(t: &str, above: conrod::WidgetId, active: bool) -> conrod::Button<F> {
+    use conrod::Positionable;
+    field_btn(t, above, active).down_from(above, 10.0)
+}
+fn field_btn<F: FnOnce()>(t: &str, above: conrod::WidgetId, active: bool) -> conrod::Button<F> {
+    use conrod::{color, Button, Colorable, Labelable, Positionable, Sizeable};
+    let btn = Button::new().label(t).h(18.0).down_from(above, 5.0);
+    if active {
+        btn.color(color::BLACK).label_color(color::WHITE)
+    } else {
+        btn
     }
 }
 
@@ -355,7 +393,7 @@ fn description(t: &str, above: conrod::WidgetId) -> conrod::Text {
     Text::new(t)
         .color(color::WHITE)
         .w_of(BODY)
-        .down_from(above, 10.0)
+        .down_from(above, 30.0)
 }
 
 widget_ids! {
@@ -367,6 +405,10 @@ widget_ids! {
     BODY,
     BODY_RIGHT,
     INSTRUCTIONS,
+    CHOOSE_TEXT,
+    FIELDBTN_ONE,
+    FIELDBTN_TWO,
+    FIELDBTN_CAP,
     SLIDER_INTRO,
     SLIDER0,
     SLIDER0_LC,

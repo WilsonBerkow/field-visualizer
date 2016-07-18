@@ -1,6 +1,6 @@
 use num::{Zero, One};
 
-use na::{Point3, Vector3, Matrix4, PerspectiveMatrix3, Norm};
+use na::{Point3, Vector3, Matrix4, PerspectiveMatrix3};
 
 use pw;
 
@@ -52,11 +52,11 @@ impl VectorField for PointChargesFieldView {
 }
 
 impl PointChargesFieldView {
-    pub fn new(camera_dist: f64, charges: Vec<PointCharge>) -> PointChargesFieldView {
+    pub fn new(camera_offset: Vector3<f64>, charges: Vec<PointCharge>) -> PointChargesFieldView {
         PointChargesFieldView {
             arrows: vec![],
             arrow_transforms: One::one(),
-            camera: util::translation_mat4(Vector3::new(0.0, -GRID_S_2, camera_dist)),
+            camera: util::translation_mat4(camera_offset + Vector3::new(0.0, -GRID_S_2, 0.0)),
             persp: PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
             charges: charges,
 
@@ -121,10 +121,8 @@ impl FieldView for PointChargesFieldView {
         pw::Rectangle::new(pw::color::WHITE).draw(view, &c.draw_state, c.transform, gl);
         let persp = &self.persp;
         for arrow in &self.arrows {
-            //if arrow.tail.x % (GRID_S as f64* 2.0) < 0.1 && arrow.tail.y % (GRID_S as f64* 2.0) < 0.1 {
-                let cam = self.camera;
-                arrow.draw(c, gl, persp, cam.clone(), view);
-            //}
+            let cam = self.camera;
+            arrow.draw(c, gl, persp, cam.clone(), view);
         }
     }
 

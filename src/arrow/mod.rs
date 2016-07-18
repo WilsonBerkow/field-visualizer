@@ -10,7 +10,7 @@ mod arrow2;
 pub use self::arrow2::*;
 
 pub struct Arrow3 {
-    pub tail: Point3<f64>,
+    tail: Point3<f64>,
     head: Point3<f64>,
     clr: [f32; 4],
 }
