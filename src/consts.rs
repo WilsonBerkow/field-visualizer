@@ -23,7 +23,7 @@ pub const CHARGE_MVMT_STEP: f64 = GRID_S;
 
 pub const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
-pub const POTENTIAL_SHADING: bool = false;
+pub const POTENTIAL_SHADING: bool = true;
 pub const COLORFUL_POTENTIAL: bool = false;
 
 pub const NEAR_PLANE_Z: f64 = 1.0;

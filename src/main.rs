@@ -17,7 +17,7 @@ mod consts;
 use consts::*;
 
 mod field;
-use field::FieldView;
+use field::{FieldView, PointCharge, PointChargesFieldView};
 
 type Backend = (pw::G2dTexture<'static>, pw::Glyphs);
 type Ui = conrod::Ui<Backend>;
@@ -48,16 +48,25 @@ fn main() {
                 ).unwrap();
             Ui::new(glyph_cache, theme)
         },
-        field: FieldView::new(75.0, vec![
-            field::PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
-            field::PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
-        ]),
+        fields: FieldChoices {
+            one_charge: PointChargesFieldView::new(75.0, vec![
+                PointCharge::new(10.0, na::Point3::new(GRID_S_2, GRID_S_2, GRID_S_2)),
+            ]),
+            two_charges: PointChargesFieldView::new(75.0, vec![
+                PointCharge::new(10.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+                PointCharge::new(-10.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+            ]),
+            capacitor: PointChargesFieldView::new_capacitor(75.0),
+        },
+        selected: FieldChoice::Capacitor,
         view: [VIEW_RIGHT - VIEW_W, VIEW_BOTTOM - VIEW_H, VIEW_W, VIEW_H],
         window: [WIDTH, HEIGHT],
         rebuild_queued: false,
     };
 
-    app.field.populate_field();
+    app.fields.one_charge.populate_field();
+    app.fields.two_charges.populate_field();
+    app.fields.capacitor.populate_field();
 
     while let Some(event) = window.next() {
         app.ui.handle_event(event.clone());
@@ -80,9 +89,23 @@ fn main() {
     }
 }
 
+struct FieldChoices {
+    one_charge: PointChargesFieldView,
+    two_charges: PointChargesFieldView,
+    capacitor: PointChargesFieldView,
+}
+
+#[derive(Clone, Copy)]
+enum FieldChoice {
+    OneCharge,
+    TwoCharges,
+    Capacitor,
+}
+
 struct App {
     ui: Ui,
-    field: FieldView,
+    fields: FieldChoices,
+    selected: FieldChoice,
     view: [f64; 4], // [x, y, width, height]
     window: [u32; 2], // [width, height]
     rebuild_queued: bool, // for rebuilding field arrows after changes to, e.g., charge strengths
@@ -95,8 +118,8 @@ impl App {
 
     fn idle(&mut self) {
         if self.rebuild_queued {
-            self.field.populate_field();
-            self.field.reapply_arrow_transforms();
+            self.active_field().populate_field();
+            self.active_field().reapply_arrow_transforms();
             self.rebuild_queued = false;
         }
     }
@@ -106,7 +129,8 @@ impl App {
         self.ui.draw_if_changed(c, g);
         let mut context = c.clone();
         context.draw_state.scissor = Some(self.get_view_scissor());
-        self.field.render(context, g, self.view);
+        let view = self.view;
+        self.active_field().render(context, g, view);
     }
 
     fn update_view(&mut self, c: pw::Context) {
@@ -120,6 +144,14 @@ impl App {
                 w as f64 - x,
                 h as f64 - BANNER_HEIGHT,
             ];
+        }
+    }
+
+    fn active_field(&mut self) -> &mut FieldView {
+        match self.selected {
+            FieldChoice::OneCharge => &mut self.fields.one_charge,
+            FieldChoice::TwoCharges => &mut self.fields.two_charges,
+            FieldChoice::Capacitor => &mut self.fields.capacitor,
         }
     }
 
@@ -137,70 +169,100 @@ impl App {
     fn keypress(&mut self, key: pw::Key) {
         match key {
             pw::Key::Up => {
-                self.field.transform_camera(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
+                self.active_field().transform_camera(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
             },
             pw::Key::Down => {
-                self.field.transform_camera(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
+                self.active_field().transform_camera(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
             },
             pw::Key::Right => {
-                self.field.transform_camera(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
+                self.active_field().transform_camera(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
             },
             pw::Key::Left => {
-                self.field.transform_camera(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
+                self.active_field().transform_camera(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
             },
             pw::Key::W => {
-                self.field.transform_camera(util::translation_mat4(na::Vector3::new(0.0, 0.0, -1.0)));
+                self.active_field().transform_camera(util::translation_mat4(na::Vector3::new(0.0, 0.0, -1.0)));
             },
             pw::Key::S => {
-                self.field.transform_camera(util::translation_mat4(na::Vector3::new(0.0, 0.0, 1.0)));
+                self.active_field().transform_camera(util::translation_mat4(na::Vector3::new(0.0, 0.0, 1.0)));
             },
             pw::Key::D => {
-                self.field.transform_camera(util::translation_mat4(na::Vector3::new(-1.0, 0.0, 0.0)));
+                self.active_field().transform_camera(util::translation_mat4(na::Vector3::new(-1.0, 0.0, 0.0)));
             },
             pw::Key::A => {
-                self.field.transform_camera(util::translation_mat4(na::Vector3::new(1.0, 0.0, 0.0)));
+                self.active_field().transform_camera(util::translation_mat4(na::Vector3::new(1.0, 0.0, 0.0)));
             },
             pw::Key::Q => {
-                self.field.transform_camera(util::translation_mat4(na::Vector3::new(0.0, -1.0, 0.0)));
+                self.active_field().transform_camera(util::translation_mat4(na::Vector3::new(0.0, -1.0, 0.0)));
             },
             pw::Key::E => {
-                self.field.transform_camera(util::translation_mat4(na::Vector3::new(0.0, 1.0, 0.0)));
+                self.active_field().transform_camera(util::translation_mat4(na::Vector3::new(0.0, 1.0, 0.0)));
             },
             pw::Key::I => {
-                self.field.transform_arrows(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
+                self.active_field().transform_arrows(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
             },
             pw::Key::K => {
-                self.field.transform_arrows(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
+                self.active_field().transform_arrows(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
             },
             pw::Key::L => {
-                self.field.transform_arrows(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
+                self.active_field().transform_arrows(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
             },
             pw::Key::J => {
-                self.field.transform_arrows(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
+                self.active_field().transform_arrows(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
             },
             pw::Key::T => {
-                self.field.charges[0].loc.y -= CHARGE_MVMT_STEP;
-                self.rebuild_queued = true;
+                match self.selected {
+                    FieldChoice::TwoCharges => {
+                        self.fields.two_charges.charges[0].loc.y -= CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    _ => {},
+                }
             },
             pw::Key::G => {
-                self.field.charges[0].loc.y += CHARGE_MVMT_STEP;
-                self.rebuild_queued = true;
+                match self.selected {
+                    FieldChoice::TwoCharges => {
+                        self.fields.two_charges.charges[0].loc.y += CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    _ => {},
+                }
             },
             pw::Key::H => {
-                self.field.charges[0].loc.x += CHARGE_MVMT_STEP;
-                self.rebuild_queued = true;
+                match self.selected {
+                    FieldChoice::TwoCharges => {
+                        self.fields.two_charges.charges[0].loc.x += CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    _ => {},
+                }
             },
             pw::Key::F => {
-                self.field.charges[0].loc.x -= CHARGE_MVMT_STEP;
-                self.rebuild_queued = true;
+                match self.selected {
+                    FieldChoice::TwoCharges => {
+                        self.fields.two_charges.charges[0].loc.x -= CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    _ => {},
+                }
             },
             pw::Key::R => {
-                self.field.charges[0].loc.z -= CHARGE_MVMT_STEP;
-                self.rebuild_queued = true;
+                match self.selected {
+                    FieldChoice::TwoCharges => {
+                        self.fields.two_charges.charges[0].loc.z -= CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    _ => {},
+                }
             },
             pw::Key::Y => {
-                self.field.charges[0].loc.z += CHARGE_MVMT_STEP;
-                self.rebuild_queued = true;
+                match self.selected {
+                    FieldChoice::TwoCharges => {
+                        self.fields.two_charges.charges[0].loc.z += CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    _ => {},
+                }
             },
             _ => {},
         }
@@ -208,7 +270,8 @@ impl App {
 
     fn set_widgets(&mut self) {
         let h = self.window[1] as f64;
-        let field = &mut self.field;
+        let selected = self.selected;
+        let fields = &mut self.fields;
         let view = self.view;
         let mut queue_rebuild = false;
         self.ui.set_widgets(|ref mut ui: UiCell| {
@@ -230,40 +293,48 @@ impl App {
   - WASDEQ to move the camera
   - arrow keys to look around
   - IJKL to rotate field").set(INSTRUCTIONS, ui);
-            description("Set magnitudes of charges:", INSTRUCTIONS).set(SLIDER_INTRO, ui);
-            // Label and slider for left charge value
-            let value0 = field.charges[1].charge;
-            slider!(
-                ids[SLIDER0, SLIDER0_LC, SLIDER0_SC, SLIDER0_L, SLIDER0_S],
-                above = SLIDER_INTRO,
-                top = false,
-                view = view,
-                ui = ui,
-                value = value0,
-                range = [0.0, -10.0],
-                text = "Left charge: ",
-                react = |c: f64| {
-                    field.charges[1].charge = c;
-                    queue_rebuild = true;
-                }
-            );
-            // Label and slider for right charge value
-            let value1 = field.charges[0].charge;
-            slider!(
-                ids[SLIDER1, SLIDER1_LC, SLIDER1_SC, SLIDER1_L, SLIDER1_S],
-                above = SLIDER0,
-                top = false,
-                view = view,
-                ui = ui,
-                value = value1,
-                range = [0.0, 10.0],
-                text = "Right charge: ",
-                react = |c: f64| {
-                    field.charges[0].charge = c;
-                    queue_rebuild = true;
-                }
-            );
-            //Text::new(" 
+            match selected {
+                FieldChoice::OneCharge => {
+                },
+                FieldChoice::TwoCharges => {
+                    let field = &mut fields.two_charges;
+                    description("Set magnitudes of charges:", INSTRUCTIONS).set(SLIDER_INTRO, ui);
+                    // Label and slider for left charge value
+                    let value0 = field.charges[1].charge;
+                    slider!(
+                        ids[SLIDER0, SLIDER0_LC, SLIDER0_SC, SLIDER0_L, SLIDER0_S],
+                        above = SLIDER_INTRO,
+                        top = false,
+                        view = view,
+                        ui = ui,
+                        value = value0,
+                        range = [0.0, -10.0],
+                        text = "Left charge: ",
+                        react = |c: f64| {
+                            field.charges[1].charge = c;
+                            queue_rebuild = true;
+                        }
+                    );
+                    // Label and slider for right charge value
+                    let value1 = field.charges[0].charge;
+                    slider!(
+                        ids[SLIDER1, SLIDER1_LC, SLIDER1_SC, SLIDER1_L, SLIDER1_S],
+                        above = SLIDER0,
+                        top = false,
+                        view = view,
+                        ui = ui,
+                        value = value1,
+                        range = [0.0, 10.0],
+                        text = "Right charge: ",
+                        react = |c: f64| {
+                            field.charges[0].charge = c;
+                            queue_rebuild = true;
+                        }
+                    );
+                },
+                FieldChoice::Capacitor => {
+                },
+            }
         });
         if queue_rebuild {
             self.rebuild_queued = true;

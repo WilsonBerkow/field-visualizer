@@ -18,7 +18,7 @@ impl PointCharge {
 }
 
 const FIELD_SCALE_FACTOR: f64 = 10000.0;
-impl VectorField3 for PointCharge {
+impl VectorField for PointCharge {
     fn field_data_at(&self, p: &Point3<f64>) -> FieldData {
         let dist_squared = na::distance_squared(&self.loc, p);
         let dist = dist_squared.sqrt();
