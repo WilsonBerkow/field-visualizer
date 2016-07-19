@@ -9,15 +9,17 @@ use pw::EventLoop;
 use std::f64::consts::PI;
 
 mod arrow;
-pub use arrow::Arrow3;
+
+mod field;
+use field::FieldView;
+
+mod point_charge;
+use point_charge::{PointCharge, PointChargesFieldView};
 
 #[macro_use] mod util;
 
 mod consts;
 use consts::*;
-
-mod field;
-use field::{FieldView, PointCharge, PointChargesFieldView};
 
 type Backend = (pw::G2dTexture<'static>, pw::Glyphs);
 type Ui = conrod::Ui<Backend>;

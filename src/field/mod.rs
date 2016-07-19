@@ -1,146 +1,86 @@
-use num::{Zero, One};
+use std::f64::NEG_INFINITY;
 
-use na::{Point3, Vector3, Matrix4, PerspectiveMatrix3};
+use na::{Point3, Matrix4, Norm};
 
 use pw;
 
 use arrow::Arrow3;
 
+mod vector_field;
+pub use self::vector_field::*;
+
 use util;
 use consts::*;
 
-mod field_data;
-mod point_charge;
+pub trait FieldView: VectorField {
+    fn ranges(&self) -> ((i64, i64), (i64, i64), (i64, i64));
+    fn set_arrows(&mut self, Vec<Arrow3>);
+    fn render(&self, c: pw::Context, gl: &mut pw::G2d, view: [f64; 4]);
+    fn transform_arrows(&mut self, Matrix4<f64>);
+    fn reapply_arrow_transforms(&mut self);
+    fn transform_camera(&mut self, Matrix4<f64>);
 
-pub use self::field_data::{FieldData, VectorField, FieldView};
-pub use self::point_charge::PointCharge;
+    fn populate_field(&mut self) {
+        let ((lx, rx), (ly, ry), (lz, rz)) = self.ranges();
 
-pub struct PointChargesFieldView {
-    // The PointCharges whose field we are visualizing
-    pub charges: Vec<PointCharge>,
+        // Keep track of stongest value of field so we can scale all
+        // field vectors later and cap the length of the longest one
+        let mut max_field: f64 = NEG_INFINITY;
 
-    // The arrows describing the field strengths
-    arrows: Vec<Arrow3>,
+        // Same for potential, for color or alpha
+        let mut max_abs_potential: f64 = NEG_INFINITY;
 
-    // The product of all transformations applied to the arrows
-    // of the PointChargesFieldView (not to the camera). With this we can move
-    // the location of a charge, rebuild the field, and then reapply
-    // arrow_transforms to put the field where the user expects it
-    arrow_transforms: Matrix4<f64>,
+        let mut field: Vec<(Point3<f64>, FieldData)> = vec![];
 
-    // The transformation from absolute positions (as in `arrows`) to
-    // positions relative to the camera's position and orientation
-    camera: Matrix4<f64>,
+        // Get data at all points in field
+        for i in lx..rx {
+            for j in ly..ry {
+                for k in lz..rz {
+                    let loc = Point3::new(
+                        i as f64 * GRID_S,
+                        j as f64 * GRID_S,
+                        k as f64 * GRID_S);
+                    let field_data = self.field_data_at(&loc);
+                    max_field = util::f64_max(max_field, field_data.force_mag);
+                    max_abs_potential = util::f64_max(max_abs_potential, field_data.potential.abs());
 
-    // The bounds of the grid in which we are viewing the field
-    x_range: (i64, i64),
-    y_range: (i64, i64),
-    z_range: (i64, i64),
-
-    // For getting to 2-space
-    persp: PerspectiveMatrix3<f64>,
-}
-
-impl VectorField for PointChargesFieldView {
-    fn field_data_at(&self, p: &Point3<f64>) -> FieldData {
-        let mut field_data: FieldData = self.charges.iter()
-            .map(|chg| chg.field_data_at(&p))
-            .fold(Zero::zero(), |f0, f1| f0 + f1);
-        field_data.update_norm();
-        field_data
-    }
-}
-
-impl PointChargesFieldView {
-    pub fn new(camera_offset: Vector3<f64>, charges: Vec<PointCharge>) -> PointChargesFieldView {
-        PointChargesFieldView {
-            arrows: vec![],
-            arrow_transforms: One::one(),
-            camera: util::translation_mat4(camera_offset + Vector3::new(0.0, -GRID_S_2, 0.0)),
-            persp: PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
-            charges: charges,
-
-            // Ranges in x,y,z in which we will draw the field vectors
-            // These are expressed in terms on cubes in the grid, ie.,
-            // in units of GRID_S voxels.
-            x_range: (-4, 6),
-            y_range: (-2, 4),
-            z_range: (-2, 4),
-        }
-    }
-
-    pub fn new_capacitor(camera_dist: f64) -> PointChargesFieldView {
-        use na::Point3;
-        let x_range = (-2, 3);
-        let y_range = (-3, 3);
-        let z_range = (-1, 2);
-        // fact used to place charges more densely
-        let fact = 3;
-        // extra margin of charges around visible area to sraighten out field
-        let (buffer_l, buffer_r) = (3, 2);
-        let mut charges = vec![];
-        for i in fact * x_range.0 - buffer_l..fact * x_range.1 + buffer_r {
-            let x = i as f64 * GRID_S / fact as f64;
-            for j in fact * z_range.0 - 3..fact * z_range.1 + 2 {
-                let z = j as f64 * GRID_S_2;
-                charges.push(
-                    PointCharge::new(1.0, Point3::new(x, -4.0 * GRID_S, z))
-                );
-                charges.push(
-                    PointCharge::new(-1.0, Point3::new(x, 4.0 * GRID_S, z))
-                );
+                    field.push((loc, field_data));
+                }
             }
         }
-        PointChargesFieldView {
-            arrows: vec![],
-            arrow_transforms: One::one(),
-            camera: util::translation_mat4(Vector3::new(0.0, 0.0, camera_dist)),
-            persp: PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
-            charges: charges,
 
-            // Ranges in x,y,z in which we will draw the field vectors
-            // These are expressed in terms on cubes in the grid, ie.,
-            // in units of GRID_S voxels.
-            x_range: x_range,
-            y_range: y_range,
-            z_range: z_range,
+        let mut arrows = vec![];
+        // Generate arrows based on those data
+        for (loc, field_data) in field {
+            let rel_mag = field_data.force_mag / max_field;
+            let rel_pot = (1.0 + field_data.potential / max_abs_potential) / 2.0;
+
+            let length = FIELD_VEC_MIN_LEN + rel_mag * FIELD_VEC_LEN_RANGE;
+            let adjusted_pot = (1.0 - 0.7 * (1.0 - rel_pot)) as f32; // So none are at 0.0 (nor below 0.3)
+            // Based on configured constants, make clr
+            let clr = if POTENTIAL_SHADING {
+                // `clr` changes based on potential
+                if COLORFUL_POTENTIAL {
+                    // Use a scale from red to blue
+                    if adjusted_pot > 0.0 {
+                        [adjusted_pot, 0.0, 1.0 - adjusted_pot, 1.0]
+                    } else {
+                        [1.0 + adjusted_pot, 0.0, -adjusted_pot, 1.0]
+                    }
+                } else {
+                    [0.0, 0.0, 0.0, adjusted_pot]
+                }
+            } else {
+                // `clr` changes based on field magnitude
+                [0.0, 0.0, 0.0, (rel_mag * 2.2) as f32]
+            };
+
+            // loc is the center of the arrow stem
+            let arrow_vec = length * field_data.force_vec.normalize();
+            let tail = loc - arrow_vec * 0.5;
+            let head = loc + arrow_vec * 0.5;
+            arrows.push(Arrow3::from_to_clr(tail, head, clr));
         }
-    }
-}
-
-impl FieldView for PointChargesFieldView {
-    fn ranges(&self) -> ((i64, i64), (i64, i64), (i64, i64)) {
-        (self.x_range, self.y_range, self.z_range)
-    }
-
-    fn set_arrows(&mut self, arrows: Vec<Arrow3>) {
-        self.arrows = arrows;
-    }
-
-    fn render(&self, c: pw::Context, gl: &mut pw::G2d, view: [f64; 4]) {
-        pw::Rectangle::new(pw::color::WHITE).draw(view, &c.draw_state, c.transform, gl);
-        let persp = &self.persp;
-        for arrow in &self.arrows {
-            let cam = self.camera;
-            arrow.draw(c, gl, persp, cam.clone(), view);
-        }
-    }
-
-    fn transform_arrows(&mut self, t: Matrix4<f64>) {
-        for arrow in self.arrows.iter_mut() {
-            arrow.map_transform(&t);
-        }
-        // Record t in arrow_transforms
-        self.arrow_transforms = t * self.arrow_transforms;
-    }
-
-    fn reapply_arrow_transforms(&mut self) {
-        for arrow in self.arrows.iter_mut() {
-            arrow.map_transform(&self.arrow_transforms);
-        }
-    }
-
-    fn transform_camera(&mut self, t: Matrix4<f64>) {
-        self.camera = t * self.camera;
+        self.set_arrows(arrows);
     }
 }

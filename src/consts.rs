@@ -21,8 +21,6 @@ pub const GRID_DIAG: f64 = GRID_S * 1.73205080757; // 1.7... is sqrt(3)
 
 pub const CHARGE_MVMT_STEP: f64 = GRID_S;
 
-pub const ARROW_CLR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
-
 pub const POTENTIAL_SHADING: bool = true;
 pub const COLORFUL_POTENTIAL: bool = false;
 

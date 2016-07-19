@@ -1,10 +1,9 @@
-use na;
-use na::{ Point3, Vector3, Translate };
-
 use std::ops::Add;
 use std::ops::AddAssign;
 
-use field::field_data::*;
+use na::{self, Point3, Vector3, Translate};
+
+use field::{FieldData, VectorField};
 
 pub struct PointCharge {
     pub charge: f64,
@@ -17,13 +16,14 @@ impl PointCharge {
     }
 }
 
-const FIELD_SCALE_FACTOR: f64 = 10000.0;
+const CHARGE_SCALE_FACTOR: f64 = 10000.0;
+
 impl VectorField for PointCharge {
     fn field_data_at(&self, p: &Point3<f64>) -> FieldData {
         let dist_squared = na::distance_squared(&self.loc, p);
         let dist = dist_squared.sqrt();
-        let force_mag = FIELD_SCALE_FACTOR * self.charge / dist_squared;
-        let potential = FIELD_SCALE_FACTOR * self.charge / dist;
+        let force_mag = CHARGE_SCALE_FACTOR * self.charge / dist_squared;
+        let potential = CHARGE_SCALE_FACTOR * self.charge / dist;
         let unit_vec = (p.clone() - self.loc) / dist;
         FieldData {
             force_vec: unit_vec * force_mag,
