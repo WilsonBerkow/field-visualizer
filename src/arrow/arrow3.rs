@@ -26,10 +26,10 @@ impl Arrow3 {
         self.head = transform_in_homo(self.head, mat);
     }
 
-    fn project_to_viewport(&self, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>, view: [f64; 4]) -> Option<Arrow2> {
+    fn project_to_viewport(&self, persp: &PerspectiveMatrix3<f64>, camera: &Matrix4<f64>, view: [f64; 4]) -> Option<Arrow2> {
         // Transform relative to the camera position:
-        let headr: Point3<f64> = transform_in_homo(self.head, &camera);
-        let tailr: Point3<f64> = transform_in_homo(self.tail, &camera);
+        let headr: Point3<f64> = transform_in_homo(self.head, camera);
+        let tailr: Point3<f64> = transform_in_homo(self.tail, camera);
         if headr.z <= NEAR_PLANE_Z || tailr.z <= NEAR_PLANE_Z {
             None
         } else {
@@ -54,7 +54,7 @@ impl Arrow3 {
         }
     }
 
-    pub fn draw(&self, c: pw::Context, gl: &mut pw::G2d, persp: &PerspectiveMatrix3<f64>, camera: Matrix4<f64>, view: [f64; 4]) {
+    pub fn draw(&self, c: pw::Context, gl: &mut pw::G2d, persp: &PerspectiveMatrix3<f64>, camera: &Matrix4<f64>, view: [f64; 4]) {
         if let Some(a2d) = self.project_to_viewport(persp, camera, view) {
             a2d.draw(c, gl);
         }

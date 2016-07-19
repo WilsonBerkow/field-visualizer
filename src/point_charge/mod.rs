@@ -116,11 +116,13 @@ impl FieldView for PointChargesFieldView {
     }
 
     fn render(&self, c: pw::Context, gl: &mut pw::G2d, view: [f64; 4]) {
+        // Clear the section on which we will draw
         pw::Rectangle::new(pw::color::WHITE).draw(view, &c.draw_state, c.transform, gl);
+
         let persp = &self.persp;
+        let cam = &self.camera;
         for arrow in &self.arrows {
-            let cam = self.camera;
-            arrow.draw(c, gl, persp, cam.clone(), view);
+            arrow.draw(c, gl, persp, cam, view);
         }
     }
 
