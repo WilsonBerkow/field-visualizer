@@ -68,6 +68,7 @@ fn main() {
         view: [VIEW_RIGHT - VIEW_W, VIEW_BOTTOM - VIEW_H, VIEW_W, VIEW_H],
         window: [WIDTH, HEIGHT],
         rebuild_queued: false,
+        redraw_queued: true, // true for initial render of field
     };
 
     app.fields.one_charge.populate_field();
@@ -75,6 +76,7 @@ fn main() {
     app.fields.capacitor.populate_field();
 
     while let Some(event) = window.next() {
+        use pw::ResizeEvent;
         app.ui.handle_event(event.clone());
         match event {
             pw::Event::Render(_args) => {
@@ -89,7 +91,11 @@ fn main() {
                 app.keypress(key);
             },
             _ => {
-                app.idle();
+                if let Some(_) = event.resize_args() {
+                    app.redraw_queued = true;
+                } else {
+                    app.idle();
+                }
             },
         }
     }
@@ -115,6 +121,7 @@ struct App {
     view: [f64; 4], // [x, y, width, height]
     window: [u32; 2], // [width, height]
     rebuild_queued: bool, // for rebuilding field arrows after changes to, e.g., charge strengths
+    redraw_queued: bool,
 }
 
 impl App {
@@ -133,10 +140,13 @@ impl App {
     fn render(&mut self, c: pw::Context, g: &mut pw::G2d) {
         self.update_view(c);
         self.ui.draw_if_changed(c, g);
-        let mut context = c.clone();
-        context.draw_state.scissor = Some(self.get_view_scissor());
-        let view = self.view;
-        self.active_field().render(context, g, view);
+        if self.redraw_queued {
+            let mut context = c.clone();
+            context.draw_state.scissor = Some(self.get_view_scissor());
+            let view = self.view;
+            self.active_field().render(context, g, view);
+            self.redraw_queued = false;
+        }
     }
 
     fn update_view(&mut self, c: pw::Context) {
@@ -146,9 +156,9 @@ impl App {
             let x = util::f64_max(w as f64 * 0.3, CHROME_MIN_WIDTH as f64);
             self.view = [
                 x,
-                BANNER_HEIGHT,
+                0.0,
                 w as f64 - x,
-                h as f64 - BANNER_HEIGHT,
+                h as f64
             ];
         }
     }
@@ -173,6 +183,7 @@ impl App {
     }
 
     fn keypress(&mut self, key: pw::Key) {
+        let mut queue_redraw = true;
         match key {
             pw::Key::Up => {
                 self.active_field().transform_camera(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
@@ -270,7 +281,12 @@ impl App {
                     _ => {},
                 }
             },
-            _ => {},
+            _ => {
+                queue_redraw = false;
+            },
+        }
+        if queue_redraw {
+            self.redraw_queued = queue_redraw;
         }
     }
 
@@ -279,6 +295,7 @@ impl App {
         let fields = &mut self.fields;
         let view = self.view;
         let mut queue_rebuild = false;
+        let mut queue_redraw = false;
         let mut selected_field = self.selected;
         self.ui.set_widgets(|ref mut ui: UiCell| {
             use conrod::{color, Widget, Canvas, Text, Slider, Sizeable, Colorable, Positionable, Frameable};
@@ -286,10 +303,9 @@ impl App {
                     (HEADER, Canvas::new().length(BANNER_HEIGHT).color(color::CHARCOAL).frame(0.0)),
                     (CONTENT, Canvas::new().length(h - BANNER_HEIGHT).flow_right(&[
                         (BODY_LEFT, Canvas::new().color(color::DARK_CHARCOAL).length(CHROME_PAD as f64).frame(0.0)),
-                        (BODY, Canvas::new().color(color::DARK_CHARCOAL).length(view[0] - CHROME_PAD as f64).pad_top(CHROME_PAD as f64).frame(0.0)),
-                        (BODY_RIGHT, Canvas::new().length(view[2]).frame(0.0))
-                    ]))
-                ]).top_left().set(CANVAS, ui);
+                        (BODY, Canvas::new().color(color::DARK_CHARCOAL).length(view[0] - CHROME_PAD as f64).pad_top(CHROME_PAD as f64).frame(0.0))
+                    ]).color(color::TRANSPARENT))
+                ]).top_left().color(color::TRANSPARENT).w(view[0]).set(CANVAS, ui);
             Text::new("Fancy Fields")
                 .color(color::WHITE)
                 .font_size(BANNER_FONT_SIZE)
@@ -307,14 +323,17 @@ impl App {
             field_btn_top("One charge", CHOOSE_TEXT, selected_field == FieldChoice::OneCharge)
                 .react(|| {
                     selected_field = FieldChoice::OneCharge;
+                    queue_redraw = true;
                 }).set(FIELDBTN_ONE, ui);
             field_btn("Two charges", FIELDBTN_ONE, selected_field == FieldChoice::TwoCharges)
                 .react(|| {
                     selected_field = FieldChoice::TwoCharges;
+                    queue_redraw = true;
                 }).set(FIELDBTN_TWO, ui);
             field_btn("Capacitor", FIELDBTN_TWO, selected_field == FieldChoice::Capacitor)
                 .react(|| {
                     selected_field = FieldChoice::Capacitor;
+                    queue_redraw = true;
                 }).set(FIELDBTN_CAP, ui);
 
             // Controls
@@ -338,6 +357,7 @@ impl App {
                         react = |c: f64| {
                             field.charges[1].charge = c;
                             queue_rebuild = true;
+                            queue_redraw = true;
                         }
                     );
                     // Label and slider for right charge value
@@ -354,6 +374,7 @@ impl App {
                         react = |c: f64| {
                             field.charges[0].charge = c;
                             queue_rebuild = true;
+                            queue_redraw = true;
                         }
                     );
                 },
@@ -361,6 +382,9 @@ impl App {
                 },
             }
         });
+        if queue_redraw {
+            self.redraw_queued = true;
+        }
         if queue_rebuild {
             self.rebuild_queued = true;
         }
@@ -405,7 +429,6 @@ widget_ids! {
     CONTENT,
     BODY_LEFT,
     BODY,
-    BODY_RIGHT,
     INSTRUCTIONS,
     CHOOSE_TEXT,
     FIELDBTN_ONE,

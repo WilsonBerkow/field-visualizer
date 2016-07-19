@@ -56,10 +56,10 @@ macro_rules! slider {
         let label = format!("{}{:.*}", $text_prefix, 1, value);
         {
             let items = [
-                ($text_canv, Canvas::new().color(color::DARK_CHARCOAL).length_weight(1.3).frame(0.0)),
-                ($slider_canv, Canvas::new().color(color::DARK_CHARCOAL).frame(0.0)),
+                ($text_canv, Canvas::new().color(color::TRANSPARENT).length_weight(1.3).frame(0.0)),
+                ($slider_canv, Canvas::new().color(color::TRANSPARENT).frame(0.0)),
             ];
-            let mut c = Canvas::new().flow_right(&items);
+            let mut c = Canvas::new().flow_right(&items).frame(0.0).color(color::TRANSPARENT);
             c = if $top { c.mid_top_of($above) } else { c.down_from($above, 5.0) };
             c.w($view[0]).set($self_id, $ui);
         }
@@ -67,11 +67,11 @@ macro_rules! slider {
             .color(color::WHITE)
             .align_text_right()
             .top_right_of($text_canv)
-            .padded_w_of($text_canv, 7.0)
+            .w_of($text_canv)
             .set($text_id, $ui);
         Slider::new(value, $leftbound, $rightbound)
             .mid_bottom_of($slider_canv)
-            .padded_w_of($slider_canv, 10.0)
+            .w($ui.w_of($slider_canv).unwrap() - 15.0)
             .h(CHROME_SLIDER_HEIGHT as f64)
             .react($react)
             .set($slider_id, $ui);
