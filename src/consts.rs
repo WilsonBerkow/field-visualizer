@@ -1,3 +1,5 @@
+pub const TITLE: &'static str = "Field Visualizer";
+
 pub const WIDTH: u32 = 600;
 pub const HEIGHT: u32 = 600;
 pub const WIDTHF: f64 = WIDTH as f64;

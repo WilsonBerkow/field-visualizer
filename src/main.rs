@@ -28,7 +28,7 @@ type UiCell<'a> = conrod::UiCell<'a, Backend>;
 fn main() {
     let opengl: pw::OpenGL = pw::OpenGL::V3_2;
     let mut window: pw::PistonWindow = pw::WindowSettings::new(
-            "Field Visualizer",
+            TITLE,
             [WIDTH, HEIGHT]
         )
         .opengl(opengl)
@@ -306,11 +306,11 @@ impl App {
                         (BODY, Canvas::new().color(color::DARK_CHARCOAL).length(view[0] - CHROME_PAD as f64).pad_top(CHROME_PAD as f64).frame(0.0))
                     ]).color(color::TRANSPARENT))
                 ]).top_left().color(color::TRANSPARENT).w(view[0]).set(CANVAS, ui);
-            Text::new("Fancy Fields")
+            Text::new(TITLE)
                 .color(color::WHITE)
                 .font_size(BANNER_FONT_SIZE)
                 .mid_left_with_margin_on(HEADER, 5.0)
-                .set(TITLE, ui);
+                .set(TITLE_TEXT, ui);
 
             // Instructions
             description_top("Controls:
@@ -425,7 +425,7 @@ fn description(t: &str, above: conrod::WidgetId) -> conrod::Text {
 widget_ids! {
     CANVAS,
     HEADER,
-    TITLE,
+    TITLE_TEXT,
     CONTENT,
     BODY_LEFT,
     BODY,
