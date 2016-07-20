@@ -69,6 +69,7 @@ fn main() {
         window: [WIDTH, HEIGHT],
         rebuild_queued: false,
         redraw_queued: true, // true for initial render of field
+        redraw_echo_queued: false,
     };
 
     app.fields.one_charge.populate_field();
@@ -122,6 +123,9 @@ struct App {
     window: [u32; 2], // [width, height]
     rebuild_queued: bool, // for rebuilding field arrows after changes to, e.g., charge strengths
     redraw_queued: bool,
+    // Upon drawing, we draw once more in the next frame (see
+    // problem described in message of commit 93fe0b).
+    redraw_echo_queued: bool,
 }
 
 impl App {
@@ -134,18 +138,25 @@ impl App {
             self.active_field().populate_field();
             self.active_field().reapply_arrow_transforms();
             self.rebuild_queued = false;
+            // Then, redraw
+            self.redraw_queued = true;
         }
     }
 
     fn render(&mut self, c: pw::Context, g: &mut pw::G2d) {
         self.update_view(c);
         self.ui.draw_if_changed(c, g);
-        if self.redraw_queued {
+        if self.redraw_queued || self.redraw_echo_queued {
             let mut context = c.clone();
             context.draw_state.scissor = Some(self.get_view_scissor());
-            let view = self.view;
+            let view = self.view; // must copy b/c self is mutably borrowed in next line
             self.active_field().render(context, g, view);
-            self.redraw_queued = false;
+            if self.redraw_queued {
+                self.redraw_echo_queued = true;
+                self.redraw_queued = false;
+            } else {
+                self.redraw_echo_queued = false;
+            }
         }
     }
 
@@ -357,7 +368,6 @@ impl App {
                         react = |c: f64| {
                             field.charges[1].charge = c;
                             queue_rebuild = true;
-                            queue_redraw = true;
                         }
                     );
                     // Label and slider for right charge value
@@ -374,7 +384,6 @@ impl App {
                         react = |c: f64| {
                             field.charges[0].charge = c;
                             queue_rebuild = true;
-                            queue_redraw = true;
                         }
                     );
                 },
