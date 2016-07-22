@@ -386,6 +386,7 @@ impl App {
                             queue_rebuild = true;
                         }
                     );
+                    description("Use TFGH,RY to move the positive charge around", SLIDER1).set(TFGHRY_DESCRIPTION, ui);
                 },
                 FieldChoice::Capacitor => {
                 },
@@ -454,4 +455,5 @@ widget_ids! {
     SLIDER1_SC,
     SLIDER1_L,
     SLIDER1_S,
+    TFGHRY_DESCRIPTION,
 }
