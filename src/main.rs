@@ -325,7 +325,7 @@ impl App {
 
             // Instructions
             description_top("Controls:
-  - WASDEQ to move the camera
+  - WASD,QE to move the camera
   - arrow keys to look around
   - IJKL to rotate field").set(INSTRUCTIONS, ui);
 
