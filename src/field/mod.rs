@@ -1,5 +1,3 @@
-use std::f64::NEG_INFINITY;
-
 use na::{Point3, Matrix4, Norm};
 
 use pw;
@@ -20,15 +18,27 @@ pub trait FieldView: VectorField {
     fn reapply_arrow_transforms(&mut self);
     fn transform_camera(&mut self, Matrix4<f64>);
 
+    // max values are used in rendering: vectors with field strength
+    // field_max() are as long as they can be, and similar with pot_max()
+    // for shading of vectors. None indicates max should be dynamically found
+    fn field_max(&self) -> Option<f64>;
+    fn pot_max(&self) -> Option<f64>;
+
     fn populate_field(&mut self) {
         let ((lx, rx), (ly, ry), (lz, rz)) = self.ranges();
 
         // Keep track of stongest value of field so we can scale all
         // field vectors later and cap the length of the longest one
-        let mut max_field: f64 = NEG_INFINITY;
+        let mut max_field: f64 = match self.field_max() {
+            None => 0.0, // will be dynamically calculated
+            Some(max) => max,
+        };
 
         // Same for potential, for color or alpha
-        let mut max_abs_potential: f64 = NEG_INFINITY;
+        let mut max_abs_potential: f64 = match self.pot_max() {
+            None => 0.0, // will be dynamically calculated
+            Some(max) => max,
+        };
 
         let mut field: Vec<(Point3<f64>, FieldData)> = vec![];
 
@@ -41,8 +51,12 @@ pub trait FieldView: VectorField {
                         j as f64 * GRID_S,
                         k as f64 * GRID_S);
                     let field_data = self.field_data_at(&loc);
-                    max_field = util::f64_max(max_field, field_data.force_mag);
-                    max_abs_potential = util::f64_max(max_abs_potential, field_data.potential.abs());
+                    if self.field_max().is_none() {
+                        max_field = util::f64_max(max_field, field_data.force_mag);
+                    }
+                    if self.pot_max().is_none() {
+                        max_abs_potential = util::f64_max(max_abs_potential, field_data.potential.abs());
+                    }
 
                     field.push((loc, field_data));
                 }
@@ -53,6 +67,7 @@ pub trait FieldView: VectorField {
         // Generate arrows based on those data
         for (loc, field_data) in field {
             let rel_mag = field_data.force_mag / max_field;
+            // Average pot with 1.0 to shift negative values to the range (ie [0.0, 1.0])
             let rel_pot = (1.0 + field_data.potential / max_abs_potential) / 2.0;
 
             let length = FIELD_VEC_MIN_LEN + rel_mag * FIELD_VEC_LEN_RANGE;

@@ -18,6 +18,9 @@ pub struct PointChargesFieldView {
     // The PointCharges whose field we are visualizing
     pub charges: Vec<PointCharge>,
 
+    field_max: Option<f64>,
+    pot_max: Option<f64>,
+
     // The arrows describing the field strengths
     arrows: Vec<Arrow3>,
 
@@ -51,7 +54,7 @@ impl VectorField for PointChargesFieldView {
 }
 
 impl PointChargesFieldView {
-    pub fn new(camera_offset: Vector3<f64>, charges: Vec<PointCharge>) -> PointChargesFieldView {
+    pub fn new(camera_offset: Vector3<f64>, field_max: Option<f64>, pot_max: Option<f64>, charges: Vec<PointCharge>) -> PointChargesFieldView {
         PointChargesFieldView {
             arrows: vec![],
             arrow_transforms: One::one(),
@@ -65,10 +68,13 @@ impl PointChargesFieldView {
             x_range: (-4, 6),
             y_range: (-2, 4),
             z_range: (-2, 4),
+
+            field_max: field_max,
+            pot_max: pot_max,
         }
     }
 
-    pub fn new_capacitor(camera_dist: f64) -> PointChargesFieldView {
+    pub fn new_capacitor(camera_dist: f64, field_max: Option<f64>, pot_max: Option<f64>) -> PointChargesFieldView {
         let x_range = (-2, 3);
         let y_range = (-3, 3);
         let z_range = (-1, 2);
@@ -102,6 +108,9 @@ impl PointChargesFieldView {
             x_range: x_range,
             y_range: y_range,
             z_range: z_range,
+
+            field_max: field_max,
+            pot_max: pot_max,
         }
     }
 }
@@ -142,5 +151,13 @@ impl FieldView for PointChargesFieldView {
 
     fn transform_camera(&mut self, t: Matrix4<f64>) {
         self.camera = t * self.camera;
+    }
+
+    fn field_max(&self) -> Option<f64> {
+        self.field_max
+    }
+
+    fn pot_max(&self) -> Option<f64> {
+        self.pot_max
     }
 }
