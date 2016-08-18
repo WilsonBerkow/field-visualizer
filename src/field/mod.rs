@@ -2,7 +2,7 @@ use na::{Point3, Matrix4, Norm};
 
 use pw;
 
-use arrow::Arrow3;
+use arrow::Arrow;
 
 mod vector_field;
 pub use self::vector_field::*;
@@ -17,7 +17,7 @@ pub trait FieldView: VectorField {
     fn reapply_arrow_transforms(&mut self);
     fn transform_camera(&mut self, Matrix4<f64>);
 
-    fn set_arrows(&mut self, Vec<Arrow3>);
+    fn set_arrows(&mut self, Vec<Arrow>);
 
     fn render(&self, c: pw::Context, gl: &mut pw::G2d, view: [f64; 4]);
 
@@ -56,7 +56,7 @@ pub trait FieldView: VectorField {
                     let arrow_vec = length * field_data.force_vec.normalize();
                     let tail = loc - arrow_vec * 0.5;
                     let head = loc + arrow_vec * 0.5;
-                    arrows.push(Arrow3 {
+                    arrows.push(Arrow {
                         tail: tail,
                         head: head,
                         field: rel_field,

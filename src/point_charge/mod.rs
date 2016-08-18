@@ -9,7 +9,7 @@ use field::{FieldData, VectorField, FieldView};
 mod charge;
 pub use self::charge::*;
 
-use arrow::Arrow3;
+use arrow::Arrow;
 
 use util;
 use consts::*;
@@ -22,7 +22,7 @@ pub struct PointChargesFieldView {
     greatest_pot: f64,
 
     // The arrows describing the field strengths
-    arrows: Vec<Arrow3>,
+    arrows: Vec<Arrow>,
 
     // The product of all transformations applied to the arrows
     // of the PointChargesFieldView (not to the camera). With this we can move
@@ -120,7 +120,7 @@ impl FieldView for PointChargesFieldView {
         (self.x_range, self.y_range, self.z_range)
     }
 
-    fn set_arrows(&mut self, arrows: Vec<Arrow3>) {
+    fn set_arrows(&mut self, arrows: Vec<Arrow>) {
         self.arrows = arrows;
     }
 
