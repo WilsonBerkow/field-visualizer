@@ -53,20 +53,20 @@ fn main() {
         fields: FieldChoices {
             one_charge: PointChargesFieldView::new(
                 na::Vector3::new(-GRID_S_2, 0.0, 75.0),
-                Some(592.6),
-                Some(7698.0),
+                592.6,
+                7698.0,
                 vec![PointCharge::new(8.0, na::Point3::new(GRID_S_2, GRID_S_2, GRID_S_2))]
             ),
             two_charges: PointChargesFieldView::new(
                 na::Vector3::new(0.0, 0.0, 75.0),
-                Some(602.4),
-                Some(6495.8),
+                602.4,
+                6495.8,
                 vec![
                     PointCharge::new(8.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
                     PointCharge::new(-8.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
                 ]
             ),
-            capacitor: PointChargesFieldView::new_capacitor(75.0, Some(1454.5), Some(49524.8)),
+            capacitor: PointChargesFieldView::new_capacitor(75.0, 1454.5, 49524.8),
         },
         selected: FieldChoice::TwoCharges,
         view: [VIEW_RIGHT - VIEW_W, VIEW_BOTTOM - VIEW_H, VIEW_W, VIEW_H],

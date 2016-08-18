@@ -9,18 +9,13 @@ use consts::*;
 pub struct Arrow3 {
     pub tail: Point3<f64>,
     pub head: Point3<f64>,
-    clr: [f32; 4],
+
+    // field and potential scaled down to range [0.0, 1.0]
+    pub field: f64,
+    pub potential: f64,
 }
 
 impl Arrow3 {
-    pub fn from_to_clr(tail: Point3<f64>, head: Point3<f64>, clr: [f32; 4]) -> Arrow3 {
-        Arrow3 {
-            tail: tail,
-            head: head,
-            clr: clr,
-        }
-    }
-
     pub fn map_transform(&mut self, mat: &Matrix4<f64>) {
         self.tail = transform_in_homo(self.tail, mat);
         self.head = transform_in_homo(self.head, mat);
@@ -49,7 +44,7 @@ impl Arrow3 {
                     head_prime.x * scale_factor + cx,
                     head_prime.y * scale_factor + cy,
                 ),
-                self.clr,
+                arrow_color(self.field, self.potential),
             ))
         }
     }
@@ -64,4 +59,26 @@ impl Arrow3 {
 // Lift a Point3 to Point4, apply a Matrix4, then flatten it back to Point3
 fn transform_in_homo(pt: Point3<f64>, mat: &Matrix4<f64>) -> Point3<f64> {
     <Point3<f64> as FromHomogeneous<Point4<f64>>>::from(&(ref_mat4_mul(mat, pt.to_homogeneous())))
+}
+
+fn arrow_color(field: f64, potential: f64) -> [f32; 4] {
+    // Adjust so pot is never below 0.3
+    let adjusted_pot = (1.0 - 0.7 * (1.0 - potential)) as f32;
+    if POTENTIAL_SHADING {
+        // `clr` depends on potential
+        if COLORFUL_POTENTIAL {
+            // Use a scale from red to blue
+            if adjusted_pot > 0.0 {
+                [adjusted_pot, 0.0, 1.0 - adjusted_pot, 1.0]
+            } else {
+                [1.0 + adjusted_pot, 0.0, -adjusted_pot, 1.0]
+            }
+        } else {
+            // Use an alpha scale
+            [0.0, 0.0, 0.0, adjusted_pot]
+        }
+    } else {
+        // `clr` depends on field magnitude
+        [0.0, 0.0, 0.0, (field * 2.2) as f32]
+    }
 }
