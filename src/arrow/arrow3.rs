@@ -62,20 +62,20 @@ fn transform_in_homo(pt: Point3<f64>, mat: &Matrix4<f64>) -> Point3<f64> {
 }
 
 fn arrow_color(field: f64, potential: f64) -> [f32; 4] {
-    // Adjust so pot is never below 0.3
-    let adjusted_pot = (1.0 - 0.7 * (1.0 - potential)) as f32;
+    let pot = potential as f32;
     if POTENTIAL_SHADING {
         // `clr` depends on potential
         if COLORFUL_POTENTIAL {
             // Use a scale from red to blue
-            if adjusted_pot > 0.0 {
-                [adjusted_pot, 0.0, 1.0 - adjusted_pot, 1.0]
+            if pot > 0.0 {
+                [pot, 0.0, 1.0 - pot, 1.0]
             } else {
-                [1.0 + adjusted_pot, 0.0, -adjusted_pot, 1.0]
+                [1.0 + pot, 0.0, -pot, 1.0]
             }
         } else {
-            // Use an alpha scale
-            [0.0, 0.0, 0.0, adjusted_pot]
+            // Use an alpha scale, adjusting such that alpha is never below 0.3
+            let adjusted_potential = (0.7 * potential + 0.3) as f32;
+            [0.0, 0.0, 0.0, adjusted_potential]
         }
     } else {
         // `clr` depends on field magnitude
