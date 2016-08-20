@@ -12,6 +12,9 @@ pub const CHROME_MIN_WIDTH: u32 = 300;
 pub const CHROME_PAD: u32 = 5;
 pub const CHROME_SLIDER_HEIGHT: u32 = 15;
 
+pub const INVERT_CHGS_BTN_W: f64 = 130.0;
+pub const INVERT_CHGS_BTN_H: f64 = 20.0;
+
 pub const VIEW_W: f64 = 400.0;
 pub const VIEW_RIGHT: f64 = WIDTHF;
 pub const VIEW_H: f64 = 400.0;

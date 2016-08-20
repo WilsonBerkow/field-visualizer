@@ -442,7 +442,9 @@ impl App {
                         }
                     );
                     use conrod::{Button, Labelable};
-                    Button::new().label("Invert charges").h(20.0).down_from(SLIDER_SAME_1, 5.0)
+                    Button::new().label("Invert charges")
+                        .w_h(INVERT_CHGS_BTN_W, INVERT_CHGS_BTN_H)
+                        .down_from(SLIDER_SAME_1, 5.0)
                         .react(|| {
                             field.charges[0].charge *= -1.0;
                             field.charges[1].charge *= -1.0;
