@@ -57,7 +57,7 @@ fn main() {
                 7698.0,
                 vec![PointCharge::new(8.0, na::Point3::new(GRID_S_2, GRID_S_2, GRID_S_2))]
             ),
-            two_charges: PointChargesFieldView::new(
+            two_charges_np: PointChargesFieldView::new(
                 na::Vector3::new(0.0, 0.0, 75.0),
                 602.4,
                 6495.8,
@@ -66,9 +66,18 @@ fn main() {
                     PointCharge::new(-8.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
                 ]
             ),
+            two_charges_same: PointChargesFieldView::new(
+                na::Vector3::new(0.0, 0.0, 75.0),
+                602.4,
+                9161.0,
+                vec![
+                    PointCharge::new(8.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+                    PointCharge::new(8.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
+                ]
+            ),
             capacitor: PointChargesFieldView::new_capacitor(75.0, 1454.5, 49524.8),
         },
-        selected: FieldChoice::TwoCharges,
+        selected: FieldChoice::TwoChargesNP,
         view: [VIEW_RIGHT - VIEW_W, VIEW_BOTTOM - VIEW_H, VIEW_W, VIEW_H],
         window: [WIDTH, HEIGHT],
         rebuild_queued: false,
@@ -77,7 +86,8 @@ fn main() {
     };
 
     app.fields.one_charge.populate_field();
-    app.fields.two_charges.populate_field();
+    app.fields.two_charges_np.populate_field();
+    app.fields.two_charges_same.populate_field();
     app.fields.capacitor.populate_field();
 
     while let Some(event) = window.next() {
@@ -108,14 +118,16 @@ fn main() {
 
 struct FieldChoices {
     one_charge: PointChargesFieldView,
-    two_charges: PointChargesFieldView,
+    two_charges_np: PointChargesFieldView,
+    two_charges_same: PointChargesFieldView,
     capacitor: PointChargesFieldView,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum FieldChoice {
     OneCharge,
-    TwoCharges,
+    TwoChargesNP,
+    TwoChargesSame,
     Capacitor,
 }
 
@@ -181,7 +193,8 @@ impl App {
     fn active_field(&mut self) -> &mut FieldView {
         match self.selected {
             FieldChoice::OneCharge => &mut self.fields.one_charge,
-            FieldChoice::TwoCharges => &mut self.fields.two_charges,
+            FieldChoice::TwoChargesNP => &mut self.fields.two_charges_np,
+            FieldChoice::TwoChargesSame => &mut self.fields.two_charges_same,
             FieldChoice::Capacitor => &mut self.fields.capacitor,
         }
     }
@@ -244,54 +257,54 @@ impl App {
             },
             pw::Key::T => {
                 match self.selected {
-                    FieldChoice::TwoCharges => {
-                        self.fields.two_charges.charges[0].loc.y -= CHARGE_MVMT_STEP;
-                        self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
+                        //self.active_field().charges[0].loc.y -= CHARGE_MVMT_STEP;
+                        //self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::G => {
                 match self.selected {
-                    FieldChoice::TwoCharges => {
-                        self.fields.two_charges.charges[0].loc.y += CHARGE_MVMT_STEP;
-                        self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
+                        //self.active_field().charges[0].loc.y += CHARGE_MVMT_STEP;
+                        //self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::H => {
                 match self.selected {
-                    FieldChoice::TwoCharges => {
-                        self.fields.two_charges.charges[0].loc.x += CHARGE_MVMT_STEP;
-                        self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
+                        //self.active_field().charges[0].loc.x += CHARGE_MVMT_STEP;
+                        //self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::F => {
                 match self.selected {
-                    FieldChoice::TwoCharges => {
-                        self.fields.two_charges.charges[0].loc.x -= CHARGE_MVMT_STEP;
-                        self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
+                        //self.active_field().charges[0].loc.x -= CHARGE_MVMT_STEP;
+                        //self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::R => {
                 match self.selected {
-                    FieldChoice::TwoCharges => {
-                        self.fields.two_charges.charges[0].loc.z -= CHARGE_MVMT_STEP;
-                        self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
+                        //self.active_field().charges[0].loc.z -= CHARGE_MVMT_STEP;
+                        //self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::Y => {
                 match self.selected {
-                    FieldChoice::TwoCharges => {
-                        self.fields.two_charges.charges[0].loc.z += CHARGE_MVMT_STEP;
-                        self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
+                        //self.active_field().charges[0].loc.z += CHARGE_MVMT_STEP;
+                        //self.rebuild_queued = true;
                     },
                     _ => {},
                 }
@@ -340,12 +353,17 @@ impl App {
                     selected_field = FieldChoice::OneCharge;
                     queue_redraw = true;
                 }).set(FIELDBTN_ONE, ui);
-            field_btn("Two charges", FIELDBTN_ONE, selected_field == FieldChoice::TwoCharges)
+            field_btn("Two identical charges", FIELDBTN_ONE, selected_field == FieldChoice::TwoChargesSame)
                 .react(|| {
-                    selected_field = FieldChoice::TwoCharges;
+                    selected_field = FieldChoice::TwoChargesSame;
                     queue_redraw = true;
                 }).set(FIELDBTN_TWO, ui);
-            field_btn("Capacitor", FIELDBTN_TWO, selected_field == FieldChoice::Capacitor)
+            field_btn("Two opposite charges", FIELDBTN_TWO, selected_field == FieldChoice::TwoChargesNP)
+                .react(|| {
+                    selected_field = FieldChoice::TwoChargesNP;
+                    queue_redraw = true;
+                }).set(FIELDBTN_THREE, ui);
+            field_btn("Capacitor", FIELDBTN_THREE, selected_field == FieldChoice::Capacitor)
                 .react(|| {
                     selected_field = FieldChoice::Capacitor;
                     queue_redraw = true;
@@ -355,19 +373,17 @@ impl App {
             match selected_field {
                 FieldChoice::OneCharge => {
                 },
-                FieldChoice::TwoCharges => {
-                    let field = &mut fields.two_charges;
-                    description("Set magnitudes of charges:", FIELDBTN_TWO).set(SLIDER_INTRO, ui);
+                FieldChoice::TwoChargesNP => {
+                    let field = &mut fields.two_charges_np;
+                    description("Set magnitudes of charges:", FIELDBTN_THREE).set(SLIDER_NP_INTRO, ui);
                     // Label and slider for left charge value
                     let value0 = field.charges[1].charge;
                     slider!(
-                        ids[SLIDER0, SLIDER0_LC, SLIDER0_SC, SLIDER0_L, SLIDER0_S],
-                        above = SLIDER_INTRO,
-                        top = false,
-                        view = view,
-                        ui = ui,
+                        ids[SLIDER_NP_0, SLIDER_NP_0_LC, SLIDER_NP_0_SC, SLIDER_NP_0_L, SLIDER_NP_0_S],
+                        above = SLIDER_NP_INTRO,
+                        view = view, ui = ui,
                         value = value0,
-                        range = [-10.0, 10.0],
+                        range = [0.0, -10.0],
                         text = "Left charge: ",
                         react = |c: f64| {
                             field.charges[1].charge = c;
@@ -377,20 +393,60 @@ impl App {
                     // Label and slider for right charge value
                     let value1 = field.charges[0].charge;
                     slider!(
-                        ids[SLIDER1, SLIDER1_LC, SLIDER1_SC, SLIDER1_L, SLIDER1_S],
-                        above = SLIDER0,
-                        top = false,
-                        view = view,
+                        ids[SLIDER_NP_1, SLIDER_NP_1_LC, SLIDER_NP_1_SC, SLIDER_NP_1_L, SLIDER_NP_1_S],
+                        above = SLIDER_NP_0, view = view,
                         ui = ui,
                         value = value1,
-                        range = [-10.0, 10.0],
+                        range = [0.0, 10.0],
                         text = "Right charge: ",
                         react = |c: f64| {
                             field.charges[0].charge = c;
                             queue_rebuild = true;
                         }
                     );
-                    description("Use TFGH,RY to move the right-side charge around", SLIDER1).set(TFGHRY_DESCRIPTION, ui);
+                    description("Use TFGH,RY to move the right-side charge around", SLIDER_NP_1).set(TFGHRY_DESCRIPTION, ui);
+                },
+                FieldChoice::TwoChargesSame => {
+                    let field = &mut fields.two_charges_same;
+                    description("Set magnitudes of charges:", FIELDBTN_THREE).set(SLIDER_SAME_INTRO, ui);
+                    // Label and slider for left charge value
+                    let value0 = field.charges[1].charge;
+                    let signum = value0.signum();
+                    slider!(
+                        ids[SLIDER_SAME_0, SLIDER_SAME_0_LC, SLIDER_SAME_0_SC, SLIDER_SAME_0_L, SLIDER_SAME_0_S],
+                        above = SLIDER_SAME_INTRO,
+                        view = view, ui = ui,
+                        value = value0,
+                        range = [0.0, signum * 10.0],
+                        text = "Left charge: ",
+                        react = |c: f64| {
+                            field.charges[1].charge = c;
+                            queue_rebuild = true;
+                        }
+                    );
+                    // Label and slider for right charge value
+                    let value1 = field.charges[0].charge;
+                    slider!(
+                        ids[SLIDER_SAME_1, SLIDER_SAME_1_LC, SLIDER_SAME_1_SC, SLIDER_SAME_1_L, SLIDER_SAME_1_S],
+                        above = SLIDER_SAME_0, view = view,
+                        ui = ui,
+                        value = value1,
+                        range = [0.0, signum * 10.0],
+                        text = "Right charge: ",
+                        react = |c: f64| {
+                            field.charges[0].charge = c;
+                            queue_rebuild = true;
+                        }
+                    );
+                    use conrod::{Button, Labelable};
+                    Button::new().label("Invert charges").h(20.0).down_from(SLIDER_SAME_1, 5.0)
+                        .react(|| {
+                            field.charges[0].charge *= -1.0;
+                            field.charges[1].charge *= -1.0;
+                            queue_rebuild = true;
+                        })
+                        .set(INVERT_CHARGES_BTN, ui);
+                    description("Use TFGH,RY to move the right-side charge around", INVERT_CHARGES_BTN).set(TFGHRY_DESCRIPTION, ui);
                 },
                 FieldChoice::Capacitor => {
                 },
@@ -447,17 +503,30 @@ widget_ids! {
     CHOOSE_TEXT,
     FIELDBTN_ONE,
     FIELDBTN_TWO,
+    FIELDBTN_THREE,
     FIELDBTN_CAP,
-    SLIDER_INTRO,
-    SLIDER0,
-    SLIDER0_LC,
-    SLIDER0_SC,
-    SLIDER0_L,
-    SLIDER0_S,
-    SLIDER1,
-    SLIDER1_LC,
-    SLIDER1_SC,
-    SLIDER1_L,
-    SLIDER1_S,
+    SLIDER_NP_INTRO,
+    SLIDER_NP_0,
+    SLIDER_NP_0_LC,
+    SLIDER_NP_0_SC,
+    SLIDER_NP_0_L,
+    SLIDER_NP_0_S,
+    SLIDER_NP_1,
+    SLIDER_NP_1_LC,
+    SLIDER_NP_1_SC,
+    SLIDER_NP_1_L,
+    SLIDER_NP_1_S,
+    SLIDER_SAME_INTRO,
+    SLIDER_SAME_0,
+    SLIDER_SAME_0_LC,
+    SLIDER_SAME_0_SC,
+    SLIDER_SAME_0_L,
+    SLIDER_SAME_0_S,
+    SLIDER_SAME_1,
+    SLIDER_SAME_1_LC,
+    SLIDER_SAME_1_SC,
+    SLIDER_SAME_1_L,
+    SLIDER_SAME_1_S,
+    INVERT_CHARGES_BTN,
     TFGHRY_DESCRIPTION,
 }

@@ -7,6 +7,8 @@ use arrow::Arrow;
 mod vector_field;
 pub use self::vector_field::*;
 
+use util;
+
 use consts::*;
 
 pub trait FieldView: VectorField {
@@ -35,6 +37,11 @@ pub trait FieldView: VectorField {
 
         let mut arrows = vec![];
 
+        let mut min_pot = 0.0;
+        let mut max_pot = 0.0;
+        let mut min_field = 0.0;
+        let mut max_field = 0.0;
+
         // Generate arrows for each position in field
         for i in min_x..max_x {
             for j in min_y..max_y {
@@ -44,6 +51,9 @@ pub trait FieldView: VectorField {
                         j as f64 * GRID_S,
                         k as f64 * GRID_S);
                     let field_data = self.field_data_at(&loc);
+                    max_field = util::f64_max(max_field, field_data.force_mag);
+                    max_pot = util::f64_max(max_pot, field_data.potential.abs());
+
                     let rel_field = field_data.force_mag / self.greatest_field();
 
                     // Shift space of potential values from range
@@ -65,6 +75,8 @@ pub trait FieldView: VectorField {
                 }
             }
         }
+
+        println!("fie: {}, pot: {}", max_field as i64, max_pot as i64);
 
         self.set_arrows(arrows);
     }

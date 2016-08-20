@@ -45,7 +45,6 @@ macro_rules! slider {
     (
         ids [ $self_id:ident, $text_canv:ident, $slider_canv:ident, $text_id:ident, $slider_id:ident ],
         above = $above:expr,
-        top = $top:expr,
         view = $view:ident, ui = $ui:ident,
         value = $value:expr,
         range = [ $leftbound:expr, $rightbound:expr ],
@@ -59,9 +58,13 @@ macro_rules! slider {
                 ($text_canv, Canvas::new().color(color::TRANSPARENT).length_weight(1.3).frame(0.0)),
                 ($slider_canv, Canvas::new().color(color::TRANSPARENT).frame(0.0)),
             ];
-            let mut c = Canvas::new().flow_right(&items).frame(0.0).color(color::TRANSPARENT);
-            c = if $top { c.mid_top_of($above) } else { c.down_from($above, 5.0) };
-            c.w($view[0]).set($self_id, $ui);
+            Canvas::new()
+                .flow_right(&items)
+                .frame(0.0)
+                .color(color::TRANSPARENT)
+                .down_from($above, 5.0)
+                .w($view[0])
+                .set($self_id, $ui);
         }
         Text::new(&label)
             .color(color::WHITE)
