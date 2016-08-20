@@ -7,8 +7,6 @@ use arrow::Arrow;
 mod vector_field;
 pub use self::vector_field::*;
 
-use util;
-
 use consts::*;
 
 pub trait FieldView: VectorField {

@@ -2,7 +2,7 @@ use pw;
 
 use na::{Point3, Point4, Matrix4, PerspectiveMatrix3, ToHomogeneous, FromHomogeneous};
 
-use util::{f64_min, ref_mat4_mul};
+use util;
 use consts::*;
 
 pub struct Arrow {
@@ -45,7 +45,7 @@ impl Arrow {
             let head_prime = persp.project_point(&headr);
             let tail_prime = persp.project_point(&tailr);
             // Trasform to viewport surface:
-            let scale_factor = 0.3 * f64_min(viewport[2], viewport[3]);
+            let scale_factor = 0.3 * util::f64_min(viewport[2], viewport[3]);
             let cx = viewport[0] + viewport[2] * 0.5;
             let cy = viewport[1] + viewport[3] * 0.5 + GRID_S;
             Some([
@@ -63,11 +63,9 @@ impl Arrow {
             // `clr` depends on potential
             if COLORFUL_POTENTIAL {
                 // Use a scale from red to blue
-                if pot > 0.0 {
-                    [pot, 0.0, 1.0 - pot, 1.0]
-                } else {
-                    [1.0 + pot, 0.0, -pot, 1.0]
-                }
+                [util::f32_max(pot, 0.0), 0.0, util::f32_max(1.0 - pot, 0.0), 1.0]
+                // Calls to f32_max(..., 0.0) ensure slight imprecision will not
+                // result in a negative channel value, which makes the color trip out
             } else {
                 // Use an alpha scale, adjusting such that alpha is never below 0.3
                 let adjusted_potential = (0.7 * self.potential + 0.3) as f32;
@@ -82,5 +80,5 @@ impl Arrow {
 
 // Lift a Point3 to Point4, apply a Matrix4, then flatten it back to Point3
 fn transform_in_homo(pt: Point3<f64>, mat: &Matrix4<f64>) -> Point3<f64> {
-    <Point3<f64> as FromHomogeneous<Point4<f64>>>::from(&(ref_mat4_mul(mat, pt.to_homogeneous())))
+    <Point3<f64> as FromHomogeneous<Point4<f64>>>::from(&(util::ref_mat4_mul(mat, pt.to_homogeneous())))
 }
