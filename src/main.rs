@@ -53,14 +53,16 @@ fn main() {
         fields: FieldChoices {
             one_charge: PointChargesFieldView::new(
                 na::Vector3::new(-GRID_S_2, 0.0, 75.0),
-                592.6,
-                7698.0,
+                474.0, // greatest field
+                931.0, // pot corresponding to lightest color
+                6158.0, // pot corresponding to darkest color
                 vec![PointCharge::new(8.0, na::Point3::new(GRID_S_2, GRID_S_2, GRID_S_2))]
             ),
             two_charges_np: PointChargesFieldView::new(
                 na::Vector3::new(0.0, 0.0, 75.0),
-                602.4,
-                6495.8,
+                602.4, // greatest field
+                -6495.8, // pot corresponding to lightest color
+                6495.8, // pot corresponding to darkest color
                 vec![
                     PointCharge::new(8.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
                     PointCharge::new(-8.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
@@ -68,8 +70,9 @@ fn main() {
             ),
             two_charges_same: PointChargesFieldView::new(
                 na::Vector3::new(0.0, 0.0, 75.0),
-                602.4,
-                9161.0,
+                602.4, // greatest field
+                2343.0, // pot corresponding to lightest color
+                9161.0, // pot corresponding to darkest color
                 vec![
                     PointCharge::new(8.0, na::Point3::new(5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
                     PointCharge::new(8.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
@@ -417,7 +420,7 @@ impl App {
                         above = SLIDER_SAME_INTRO,
                         view = view, ui = ui,
                         value = value0,
-                        range = [0.0, signum * 10.0],
+                        range = [signum * 0.1, signum * 10.0],
                         text = "Left charge: ",
                         react = |c: f64| {
                             field.charges[1].charge = c;
@@ -431,7 +434,7 @@ impl App {
                         above = SLIDER_SAME_0, view = view,
                         ui = ui,
                         value = value1,
-                        range = [0.0, signum * 10.0],
+                        range = [signum * 0.1, signum * 10.0],
                         text = "Right charge: ",
                         react = |c: f64| {
                             field.charges[0].charge = c;
@@ -443,6 +446,15 @@ impl App {
                         .react(|| {
                             field.charges[0].charge *= -1.0;
                             field.charges[1].charge *= -1.0;
+
+                            // Now negate and swap least_pot and greatest_pot, because
+                            // potential value at any given point is negated by negating
+                            // the charges. We maximize contrast by being precise with this
+                            // to make it easier to see potential gradients.
+                            let least_pot = field.least_pot;
+                            field.least_pot = -field.greatest_pot;
+                            field.greatest_pot = -least_pot;
+
                             queue_rebuild = true;
                         })
                         .set(INVERT_CHARGES_BTN, ui);

@@ -18,8 +18,9 @@ pub struct PointChargesFieldView {
     // The PointCharges whose field we are visualizing
     pub charges: Vec<PointCharge>,
 
-    greatest_field: f64,
-    greatest_pot: f64,
+    pub greatest_field: f64,
+    pub greatest_pot: f64,
+    pub least_pot: f64,
 
     // The arrows describing the field strengths
     arrows: Vec<Arrow>,
@@ -54,7 +55,8 @@ impl VectorField for PointChargesFieldView {
 }
 
 impl PointChargesFieldView {
-    pub fn new(camera_offset: Vector3<f64>, greatest_field: f64, greatest_pot: f64, charges: Vec<PointCharge>) -> PointChargesFieldView {
+    pub fn new(camera_offset: Vector3<f64>, greatest_field: f64, least_pot: f64, greatest_pot: f64, charges: Vec<PointCharge>)
+        -> PointChargesFieldView {
         PointChargesFieldView {
             arrows: vec![],
             arrow_transforms: One::one(),
@@ -71,6 +73,7 @@ impl PointChargesFieldView {
 
             greatest_field: greatest_field,
             greatest_pot: greatest_pot,
+            least_pot: least_pot,
         }
     }
 
@@ -111,6 +114,7 @@ impl PointChargesFieldView {
 
             greatest_field: greatest_field,
             greatest_pot: greatest_pot,
+            least_pot: -greatest_pot,
         }
     }
 }
@@ -159,5 +163,9 @@ impl FieldView for PointChargesFieldView {
 
     fn greatest_pot(&self) -> f64 {
         self.greatest_pot
+    }
+
+    fn least_pot(&self) -> f64 {
+        self.least_pot
     }
 }
