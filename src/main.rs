@@ -260,54 +260,78 @@ impl App {
             },
             pw::Key::T => {
                 match self.selected {
-                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
-                        //self.active_field().charges[0].loc.y -= CHARGE_MVMT_STEP;
-                        //self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP => {
+                        self.fields.two_charges_np.charges[0].loc.y -= CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    FieldChoice::TwoChargesSame => {
+                        self.fields.two_charges_same.charges[0].loc.y -= CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::G => {
                 match self.selected {
-                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
-                        //self.active_field().charges[0].loc.y += CHARGE_MVMT_STEP;
-                        //self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP => {
+                        self.fields.two_charges_np.charges[0].loc.y += CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    FieldChoice::TwoChargesSame => {
+                        self.fields.two_charges_same.charges[0].loc.y += CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::H => {
                 match self.selected {
-                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
-                        //self.active_field().charges[0].loc.x += CHARGE_MVMT_STEP;
-                        //self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP => {
+                        self.fields.two_charges_np.charges[0].loc.x += CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    FieldChoice::TwoChargesSame => {
+                        self.fields.two_charges_same.charges[0].loc.x += CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::F => {
                 match self.selected {
-                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
-                        //self.active_field().charges[0].loc.x -= CHARGE_MVMT_STEP;
-                        //self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP => {
+                        self.fields.two_charges_np.charges[0].loc.x -= CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    FieldChoice::TwoChargesSame => {
+                        self.fields.two_charges_same.charges[0].loc.x -= CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::R => {
                 match self.selected {
-                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
-                        //self.active_field().charges[0].loc.z -= CHARGE_MVMT_STEP;
-                        //self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP => {
+                        self.fields.two_charges_np.charges[0].loc.z -= CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    FieldChoice::TwoChargesSame => {
+                        self.fields.two_charges_same.charges[0].loc.z -= CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
                     },
                     _ => {},
                 }
             },
             pw::Key::Y => {
                 match self.selected {
-                    FieldChoice::TwoChargesNP | FieldChoice::TwoChargesSame => {
-                        //self.active_field().charges[0].loc.z += CHARGE_MVMT_STEP;
-                        //self.rebuild_queued = true;
+                    FieldChoice::TwoChargesNP => {
+                        self.fields.two_charges_np.charges[0].loc.z += CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
+                    },
+                    FieldChoice::TwoChargesSame => {
+                        self.fields.two_charges_same.charges[0].loc.z += CHARGE_MVMT_STEP;
+                        self.rebuild_queued = true;
                     },
                     _ => {},
                 }
