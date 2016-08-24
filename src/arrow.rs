@@ -58,17 +58,17 @@ impl Arrow {
     }
 
     fn color(&self) -> [f32; 4] {
-        let pot = self.potential as f32;
+        // Calls to f##_max(..., 0.0) ensure slight imprecision will not
+        // result in a negative channel value, which makes the color trip out
+        let pot = util::f64_max(self.potential, 0.0) as f32;
         if POTENTIAL_SHADING {
             // `clr` depends on potential
             if COLORFUL_POTENTIAL {
                 // Use a scale from red to blue
-                [util::f32_max(pot, 0.0), 0.0, util::f32_max(1.0 - pot, 0.0), 1.0]
-                // Calls to f32_max(..., 0.0) ensure slight imprecision will not
-                // result in a negative channel value, which makes the color trip out
+                [pot, 0.0, util::f32_max(1.0 - pot, 0.0), 1.0]
             } else {
                 // Use an alpha scale, adjusting such that alpha is never below 0.3
-                let adjusted_potential = (0.7 * self.potential + 0.3) as f32;
+                let adjusted_potential = 0.7 * pot + 0.3;
                 [0.0, 0.0, 0.0, adjusted_potential]
             }
         } else {
