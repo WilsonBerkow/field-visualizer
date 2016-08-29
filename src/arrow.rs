@@ -47,7 +47,7 @@ impl Arrow {
             // Trasform to viewport surface:
             let scale_factor = 0.3 * util::f64_min(viewport[2], viewport[3]);
             let cx = viewport[0] + viewport[2] * 0.5;
-            let cy = viewport[1] + viewport[3] * 0.5 + GRID_S;
+            let cy = viewport[1] + viewport[3] * 0.5;
             Some([
                 tail_prime.x * scale_factor + cx, // x0
                 tail_prime.y * scale_factor + cy, // y0

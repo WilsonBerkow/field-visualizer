@@ -52,14 +52,14 @@ fn main() {
         },
         fields: FieldChoices {
             one_charge: PointChargesFieldView::new(
-                na::Vector3::new(-GRID_S_2, 0.0, 75.0),
+                na::Vector3::new(-GRID_S_2, -GRID_S_2, 75.0),
                 474.0, // greatest field
                 931.0, // pot corresponding to lightest color
                 6158.0, // pot corresponding to darkest color
                 vec![PointCharge::new(8.0, na::Point3::new(GRID_S_2, GRID_S_2, GRID_S_2))]
             ),
             two_charges_np: PointChargesFieldView::new(
-                na::Vector3::new(0.0, 0.0, 75.0),
+                na::Vector3::new(0.0, -GRID_S_2, 75.0),
                 602.4, // greatest field
                 -6495.8, // pot corresponding to lightest color
                 6495.8, // pot corresponding to darkest color
@@ -69,7 +69,7 @@ fn main() {
                 ]
             ),
             two_charges_same: PointChargesFieldView::new(
-                na::Vector3::new(0.0, 0.0, 75.0),
+                na::Vector3::new(0.0, -GRID_S_2, 75.0),
                 602.4, // greatest field
                 2343.0, // pot corresponding to lightest color
                 9161.0, // pot corresponding to darkest color
@@ -78,7 +78,11 @@ fn main() {
                     PointCharge::new(8.0, na::Point3::new(-5.0 * GRID_S_2, GRID_S_2, GRID_S_2)),
                 ]
             ),
-            capacitor: PointChargesFieldView::new_capacitor(75.0, 1454.5, 49524.8),
+            capacitor: PointChargesFieldView::new_capacitor(
+                na::Vector3::new(0.0, 5.0, 75.0),
+                1454.5,
+                49524.8
+            ),
         },
         selected: FieldChoice::TwoChargesNP,
         view: [VIEW_RIGHT - VIEW_W, VIEW_BOTTOM - VIEW_H, VIEW_W, VIEW_H],

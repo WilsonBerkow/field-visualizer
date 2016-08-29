@@ -60,7 +60,7 @@ impl PointChargesFieldView {
         PointChargesFieldView {
             arrows: vec![],
             arrow_transforms: One::one(),
-            camera: util::translation_mat4(camera_offset + Vector3::new(0.0, -GRID_S_2, 0.0)),
+            camera: util::translation_mat4(camera_offset),
             persp: PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
             charges: charges,
 
@@ -77,7 +77,7 @@ impl PointChargesFieldView {
         }
     }
 
-    pub fn new_capacitor(camera_dist: f64, greatest_field: f64, greatest_pot: f64) -> PointChargesFieldView {
+    pub fn new_capacitor(camera_trans: Vector3<f64>, greatest_field: f64, greatest_pot: f64) -> PointChargesFieldView {
         let x_range = (-2, 3);
         let y_range = (-3, 3);
         let z_range = (-1, 2);
@@ -101,7 +101,7 @@ impl PointChargesFieldView {
         PointChargesFieldView {
             arrows: vec![],
             arrow_transforms: One::one(),
-            camera: util::translation_mat4(Vector3::new(0.0, 0.0, camera_dist)),
+            camera: util::translation_mat4(camera_trans),
             persp: PerspectiveMatrix3::new(1.0, 200.0, NEAR_PLANE_Z, FAR_PLANE_Z),
             charges: charges,
 
