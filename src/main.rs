@@ -252,16 +252,16 @@ impl App {
                 self.active_field().transform_camera(util::translation_mat4(na::Vector3::new(0.0, 1.0, 0.0)));
             },
             pw::Key::I => {
-                self.active_field().transform_arrows(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
-            },
-            pw::Key::K => {
                 self.active_field().transform_arrows(util::euler_rot_mat4(-PI * 0.01, 0.0, 0.0));
             },
+            pw::Key::K => {
+                self.active_field().transform_arrows(util::euler_rot_mat4(PI * 0.01, 0.0, 0.0));
+            },
             pw::Key::L => {
-                self.active_field().transform_arrows(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
+                self.active_field().transform_arrows(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
             },
             pw::Key::J => {
-                self.active_field().transform_arrows(util::euler_rot_mat4(0.0, -PI * 0.01, 0.0));
+                self.active_field().transform_arrows(util::euler_rot_mat4(0.0, PI * 0.01, 0.0));
             },
             pw::Key::T => {
                 match self.selected {
