@@ -373,13 +373,18 @@ impl App {
                 .set(TITLE_TEXT, ui);
 
             // Instructions
-            description_top("Controls:
-  - WASD,QE to move the camera
-  - arrow keys to look around
-  - IJKL to rotate field").set(INSTRUCTIONS, ui);
+            description_top("Controls:\n \
+                - WASD,QE to move the camera\n \
+                - arrow keys to look around\n \
+                - IJKL to rotate field").set(INSTRUCTIONS_0, ui);
+            description("The length of an arrow represents the strength of the field, and the shading the potential. \
+                Darker arrows have higher potential.", INSTRUCTIONS_0)
+                .set(INSTRUCTIONS_1, ui);
+            description("Objects accelerate in the direction from higher to lower potential.", INSTRUCTIONS_1)
+                .set(INSTRUCTIONS_2, ui);
 
             // Buttons for selecting type of field
-            description("Choose field:", INSTRUCTIONS).h(15.0).set(CHOOSE_TEXT, ui);
+            description("Choose field:", INSTRUCTIONS_2).h(15.0).set(CHOOSE_TEXT, ui);
             field_btn_top("One charge", CHOOSE_TEXT, selected_field == FieldChoice::OneCharge)
                 .react(|| {
                     selected_field = FieldChoice::OneCharge;
@@ -525,6 +530,8 @@ fn description_top(t: &str) -> conrod::Text {
         .color(color::WHITE)
         .w_of(BODY)
         .mid_top_of(BODY)
+        .align_text_left()
+        .font_size(17)
 }
 
 fn description(t: &str, above: conrod::WidgetId) -> conrod::Text {
@@ -532,7 +539,9 @@ fn description(t: &str, above: conrod::WidgetId) -> conrod::Text {
     Text::new(t)
         .color(color::WHITE)
         .w_of(BODY)
-        .down_from(above, 30.0)
+        .down_from(above, 25.0)
+        .align_text_left()
+        .font_size(17)
 }
 
 widget_ids! {
@@ -542,7 +551,9 @@ widget_ids! {
     CONTENT,
     BODY_LEFT,
     BODY,
-    INSTRUCTIONS,
+    INSTRUCTIONS_0,
+    INSTRUCTIONS_1,
+    INSTRUCTIONS_2,
     CHOOSE_TEXT,
     FIELDBTN_ONE,
     FIELDBTN_TWO,
