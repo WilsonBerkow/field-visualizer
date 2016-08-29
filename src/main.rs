@@ -93,6 +93,7 @@ fn main() {
     };
 
     app.fields.one_charge.populate_field();
+    app.fields.one_charge.transform_arrows(util::euler_rot_mat4(0.0, PI * 0.08, 0.0));
     app.fields.two_charges_np.populate_field();
     app.fields.two_charges_same.populate_field();
     app.fields.capacitor.populate_field();
