@@ -2,7 +2,7 @@
 
 name = "field-visualizer"
 version = "0.1.0"
-authors = []
+authors = ["Wilson Berkow <wilsonberkow@gmail.com>"]
 
 [[bin]]
 name = "field-visualizer"
